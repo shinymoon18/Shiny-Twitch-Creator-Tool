@@ -86,25 +86,8 @@ Verificado el 15 de noviembre de 2026 en Windows x64.
   - comprobar el anclaje, los límites y el seguimiento de la vista con zoom;
   - distinguir un pico de un milisegundo tanto en la vista de detalle como en la general.
 - Prueba de descarga con yt-dlp, FFmpeg y Deno: audio MP3 extraído correctamente del video público `jNQXAC9IVRw` de YouTube. El video de prueba antiguo de yt-dlp `BaW_jenozKc` estaba no disponible.
-- Revisión visual de la aplicación release 0.2: pista MP3 cargada, onda con zoom 2x y tiempos de la ventana visible, extremos INICIO y FIN, campos de inicio/fin/duración y todos los botones de precisión presentes.…4834 tokens truncated…f.start,self.length)=editor::nudge(self.start,self.length,sign*self.step,total,Target::End); } }
-                });
-                ui.horizontal_wrapped(|ui| {
-                    if ui.button("Escuchar fragmento").clicked() { self.stop(); match media::preview(self.audio.as_ref().unwrap(),self.start,self.length) { Ok(p)=>self.player=Some(p),Err(e)=>self.status=e } }
-                    if ui.button("Escuchar desde aquí").clicked() { self.stop(); match media::preview(self.audio.as_ref().unwrap(),self.start,total-self.start) { Ok(p)=>self.player=Some(p),Err(e)=>self.status=e } }
-                    if ui.button("Detener").clicked() { self.stop(); }
-                    if ui.button("Marcar inicio al escuchar").clicked() { if let Some(at)=self.player.as_ref().and_then(|p|p.position()) { (self.start,self.length)=editor::mark_start(at,self.length,total); } }
-                    if ui.button("Marcar final al escuchar").clicked() { if let Some(at)=self.player.as_ref().and_then(|p|p.position()) { if let Some(range)=editor::mark_end(self.start,at,total) { (self.start,self.length)=range; } } }
-                });
-                ui.label(format!("Se usará {} hasta {} / {:.3} segundos",crate::time(self.start),crate::time(self.start+self.length),self.length));
-                ui.horizontal(|ui| { apply=ui.button(RichText::new("Usar este fragmento en el video").strong()).clicked(); cancel=ui.button("Cancelar").clicked(); });
-                ui.small("Si el fragmento es más corto que el video, su resto queda en silencio. Si es más largo, se limita al corte de video.");
-            }
-            ui.label(&self.status);
-            if self.audio.is_none() { cancel |= ui.button("Cancelar carga").clicked(); }
-        });
-        if !open || cancel { return Outcome::Cancel; }
-        if apply { let mut extra=self.extra.clone(); extra.start=self.start; extra.length=Some(self.length); return Outcome::Apply(extra); }
-        Outcome::Editing
-    }
-}
-impl Drop for Editor { fn drop(&mut self) { self.cancel.store(true,Ordering::Relaxed); } }
+- Revisión visual de la aplicación release 0.2: pista MP3 cargada, onda con zoom 2x y tiempos de la ventana visible, extremos INICIO y FIN, campos de inicio/fin/duración y todos los botones de precisión presentes.
+
+Las pruebas de archivos se ejecutaron fuera del aislamiento, porque la carpeta temporal protegida bloqueó el reemplazo mediante rename. No se verificó auditivamente la salida del dispositivo de sonido ni se completó una exportación desde el diálogo gráfico; las exportaciones y su duración se verificaron con el mismo motor mediante pruebas automatizadas.
+
+Herramientas incluidas: FFmpeg/ffprobe/ffplay, yt-dlp 2026.10.26 y Deno 2.9.8. El funcionamiento de YouTube puede cambiar según el video, la red y el servicio.
