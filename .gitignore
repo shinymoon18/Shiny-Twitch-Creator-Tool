@@ -1,0 +1,15 @@
+/target/
+/.tools/
+/dist/
+*.log
+
+# Datos personales y configuracion local del editor
+Audio Twitch Cut Datos/
+Shiny Twitch Creator Tool Datos/
+/.codex/
+/.agents/
+.env
+.env.*
+!.env.example
+Thumbs.db
+.DS_Store
