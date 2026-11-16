@@ -2,14 +2,21 @@ name: Linux AppImage
 
 on:
   workflow_dispatch:
+    inputs:
+      existing_run:
+        description: Optional build run ID to recheck an existing AppImage
+        required: false
+        type: string
   push:
     branches: [port/linux-appimage]
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   build:
+    if: ${{ !inputs.existing_run }}
     runs-on: ubuntu-latest
     container: debian:bookworm
     timeout-minutes: 45
@@ -60,6 +67,7 @@ jobs:
           if-no-files-found: error
 
   distro-check:
+    if: ${{ always() && (needs.build.result == 'success' || inputs.existing_run) }}
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -82,6 +90,8 @@ jobs:
         with:
           name: linux-x86_64-appimage
           path: artifact
+          run-id: ${{ inputs.existing_run || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Verify the same package on this distribution
         shell: bash
         run: |
@@ -90,4 +100,7 @@ jobs:
           chmod +x ./*.AppImage
           export APPIMAGE_EXTRACT_AND_RUN=1
           export XDG_DATA_HOME="$PWD/test-data"
-          ./*.AppImage --portable-check
+          if ! ./*.AppImage --portable-check; then
+            find "$XDG_DATA_HOME" -type f -name error-portable.txt -exec cat {} \;
+            exit 1
+          fi
