@@ -3,18 +3,22 @@ use crate::{media::{self, Audio, Result}, video};
 #[derive(Clone)]
 pub struct Measurement { pub loudness: Option<f64>, pub peak: Option<f64> }
 
+#[cfg(test)]
 pub fn measure(audio: &Audio, start: f64, length: f64, options: Option<&video::Options>, gain: f32) -> Result<Measurement> {
+    measure_fades(audio, start, length, options, gain, crate::fades::Fades::default())
+}
+pub fn measure_fades(audio: &Audio, start: f64, length: f64, options: Option<&video::Options>, gain: f32, fades: crate::fades::Fades) -> Result<Measurement> {
     let mut cmd = media::command("ffmpeg");
     cmd.args(["-hide_banner", "-nostdin", "-ss", &start.to_string(), "-i"]).arg(&audio.path);
     let meter = "loudnorm=I=-18:TP=-1:LRA=11:print_format=json";
     if let (Some(info), Some(options)) = (&audio.video, options) {
-        let graph = video::audio_graph(info, options, length)?.ok_or("Selecciona Mantener original o un archivo local para medir sonido.")?;
+        let graph = video::audio_graph(info, options, length)?.ok_or(tr!("Select Keep original audio or a local audio file to measure loudness."))?;
         video::add_external_input(&mut cmd, options);
         cmd.args(["-filter_complex", &format!("{graph};[mixed]{meter}[measured]"), "-map", "[measured]"]);
-    } else { cmd.args(["-map", "0:a:0", "-af", &format!("atrim=duration={length:.6},volume={gain:.3}dB,{meter}")]); }
+    } else { cmd.args(["-map", "0:a:0", "-af", &format!("atrim=duration={length:.6},asetpts=PTS-STARTPTS,{},{meter}", media::audio_filter(gain, fades, length))]); }
     let (_, report) = media::run_report(cmd.args(["-t", &length.to_string(), "-vn", "-f", "null", "-"]), 7200)?;
-    let begin = report.rfind('{').ok_or("No se pudo medir el volumen de este fragmento.")?;
-    let end = report[begin..].find('}').map(|i| begin + i + 1).ok_or("Medición incompleta.")?;
+    let begin = report.rfind('{').ok_or(tr!("Could not measure this clip's loudness."))?;
+    let end = report[begin..].find('}').map(|i| begin + i + 1).ok_or(tr!("Incomplete measurement."))?;
     let value: serde_json::Value = serde_json::from_str(&report[begin..end]).map_err(|e| e.to_string())?;
     let number = |key: &str| value[key].as_str().and_then(|s| s.parse::<f64>().ok()).filter(|v| v.is_finite());
     Ok(Measurement { loudness: number("input_i"), peak: number("input_tp") })

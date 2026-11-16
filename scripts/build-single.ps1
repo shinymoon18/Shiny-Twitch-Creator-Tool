@@ -6,20 +6,20 @@ Set-Location -LiteralPath $projectRoot
 $previousFlags = $env:RUSTFLAGS
 try {
     $env:RUSTFLAGS = "$previousFlags -C target-feature=+crt-static".Trim()
-    & (Join-Path $PSScriptRoot 'build.ps1') -OutputFolder 'Shiny Twitch Creator Tool 1.1'
+    & (Join-Path $PSScriptRoot 'build.ps1') -OutputFolder 'Shiny Twitch Creator Tool 1.2'
 } finally { $env:RUSTFLAGS = $previousFlags }
 
 $partsDir = Join-Path $projectRoot '.tools\portable-parts'
 New-Item -ItemType Directory -Force -Path $partsDir | Out-Null
 $inputs = @(Get-ChildItem -LiteralPath (Join-Path $projectRoot '.tools\media') -File)
 foreach ($name in @('ffmpeg.exe', 'ffprobe.exe', 'ffplay.exe', 'yt-dlp.exe', 'deno.exe')) {
-    if (-not ($inputs | Where-Object Name -eq $name)) { throw "Falta la herramienta $name. Ejecuta setup-media.ps1." }
+    if (-not ($inputs | Where-Object Name -eq $name)) { throw "Missing tool $name. Run setup-media.ps1." }
 }
 $inputs += @(Get-Item -LiteralPath (Join-Path $projectRoot 'README.md'), (Join-Path $projectRoot 'THIRD-PARTY.md'), (Join-Path $projectRoot 'VALIDATION.md'))
 $entries = @()
 foreach ($item in $inputs) {
     $packedPath = Join-Path $partsDir ($item.Name + '.gz')
-    Write-Host "Incluyendo $($item.Name)..."
+    Write-Host "Bundling $($item.Name)..."
     $source = [System.IO.File]::OpenRead($item.FullName)
     try {
         $output = [System.IO.File]::Create($packedPath)
@@ -46,7 +46,7 @@ try {
 $hash = (Get-FileHash -LiteralPath $payloadPath -Algorithm SHA256).Hash
 $hashBytes = New-Object byte[] 32
 for ($index = 0; $index -lt 32; $index++) { $hashBytes[$index] = [Convert]::ToByte($hash.Substring($index * 2, 2), 16) }
-$destination = Join-Path $projectRoot 'dist\Shiny Twitch Creator Tool Portable 1.1.exe'
+$destination = Join-Path $projectRoot 'dist\Shiny-Twitch-Creator-Tool-Portable-1.2.0.exe'
 Copy-Item -LiteralPath (Join-Path $projectRoot 'target\release\audio-twitch-cut.exe') -Destination $destination -Force
 $exe = [System.IO.File]::Open($destination, [System.IO.FileMode]::Append, [System.IO.FileAccess]::Write)
 try {
@@ -60,5 +60,5 @@ try {
     $magic = [System.Text.Encoding]::ASCII.GetBytes('ATCUT_BUNDLE_001')
     $exe.Write($magic, 0, $magic.Length)
 } finally { $exe.Dispose() }
-Write-Host "Ejecutable unico listo: $destination"
+Write-Host "Single-file executable ready: $destination"
 Get-Item -LiteralPath $destination | Select-Object FullName, Length

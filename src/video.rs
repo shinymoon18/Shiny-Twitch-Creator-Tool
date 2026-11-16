@@ -8,15 +8,15 @@ pub struct Info { pub width: u32, pub height: u32, pub fps: f64, pub has_audio: 
 pub fn load(path: PathBuf) -> Result<Audio> {
     let bytes = media::run(media::command("ffprobe").args(["-v", "error", "-show_format", "-show_streams", "-of", "json"]).arg(&path), 30)?;
     let metadata: serde_json::Value = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
-    let streams = metadata["streams"].as_array().ok_or("No se encontraron pistas en el archivo.")?;
-    let stream = streams.iter().find(|s| s["codec_type"] == "video" && s["disposition"]["attached_pic"] != 1).ok_or("El archivo no contiene video. Abre una película o un GIF animado.")?;
-    let duration = metadata["format"]["duration"].as_str().or_else(|| stream["duration"].as_str()).and_then(|s| s.parse::<f64>().ok()).ok_or("No se pudo obtener la duración. Selecciona un video o GIF animado con duración definida.")?;
-    if !duration.is_finite() || duration <= 0.0 || duration > 14400.0 { return Err("Selecciona un video de hasta cuatro horas.".into()); }
+    let streams = metadata["streams"].as_array().ok_or(tr!("No tracks were found in the file."))?;
+    let stream = streams.iter().find(|s| s["codec_type"] == "video" && s["disposition"]["attached_pic"] != 1).ok_or(tr!("The file does not contain video. Open a video or an animated GIF."))?;
+    let duration = metadata["format"]["duration"].as_str().or_else(|| stream["duration"].as_str()).and_then(|s| s.parse::<f64>().ok()).ok_or(tr!("Could not determine the duration. Choose a video or animated GIF with a defined duration."))?;
+    if !duration.is_finite() || duration <= 0.0 || duration > 14400.0 { return Err(tr!("Choose a video up to four hours long.").into()); }
     let mut width = stream["width"].as_u64().unwrap_or(0) as u32;
     let mut height = stream["height"].as_u64().unwrap_or(0) as u32;
     let rotation = stream["side_data_list"].as_array().and_then(|s| s.iter().find_map(|v| v["rotation"].as_f64())).unwrap_or(0.0);
     if (rotation.abs() % 180.0 - 90.0).abs() < 1.0 { std::mem::swap(&mut width, &mut height); }
-    if width < 2 || height < 2 { return Err("El video tiene dimensiones no válidas.".into()); }
+    if width < 2 || height < 2 { return Err(tr!("The video dimensions are invalid.").into()); }
     let rate = stream["avg_frame_rate"].as_str().unwrap_or("30/1");
     let mut values = rate.split('/').filter_map(|s| s.parse::<f64>().ok());
     let fps = values.next().unwrap_or(30.0) / values.next().unwrap_or(1.0);
@@ -38,55 +38,55 @@ pub fn preview_size(info: &Info) -> (usize, usize) {
     (width, height)
 }
 pub fn frame(audio: &Audio, at: f64) -> Result<Frame> {
-    let info = audio.video.as_ref().ok_or("No hay video cargado.")?;
+    let info = audio.video.as_ref().ok_or(tr!("No video is loaded."))?;
     let (width, height) = preview_size(info);
     let at = at.clamp(0.0, (audio.duration - 1.0 / info.fps).max(0.0));
     let filter = format!("scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2");
     let rgb = media::run(media::command("ffmpeg").args(["-v", "error", "-nostdin", "-ss", &at.to_string(), "-i"]).arg(&audio.path)
         .args(["-map", "0:v:0", "-frames:v", "1", "-vf", &filter, "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"]), 30)?;
-    if rgb.len() != width * height * 3 { return Err("No se pudo leer el fotograma del video.".into()); }
+    if rgb.len() != width * height * 3 { return Err(tr!("Could not read the video frame.").into()); }
     Ok(Frame { width, height, rgb })
 }
 
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub enum Quality { Light, #[default] Balanced, High }
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ExternalAudio { pub path: PathBuf, pub duration: f64, pub start: f64, pub db: f32, #[serde(default)] pub length: Option<f64> }
+pub struct ExternalAudio { pub path: PathBuf, pub duration: f64, pub start: f64, pub db: f32, #[serde(default)] pub length: Option<f64>, #[serde(default)] pub fades: crate::fades::Fades }
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub enum SoundMode { Original, #[default] Silent, Replace }
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
-pub struct Options { pub height: u32, pub quality: Quality, pub limit_fps: bool, pub mode: SoundMode, pub original_db: f32, pub external: Option<ExternalAudio>, pub master_db: f32 }
-impl Default for Options { fn default() -> Self { Self { height: 720, quality: Quality::Balanced, limit_fps: true, mode: SoundMode::Silent, original_db: 0.0, external: None, master_db: 0.0 } } }
+pub struct Options { pub height: u32, pub quality: Quality, pub limit_fps: bool, pub mode: SoundMode, pub original_db: f32, pub external: Option<ExternalAudio>, pub master_db: f32, pub fades: crate::fades::Fades }
+impl Default for Options { fn default() -> Self { Self { height: 720, quality: Quality::Balanced, limit_fps: true, mode: SoundMode::Silent, original_db: 0.0, external: None, master_db: 0.0, fades: crate::fades::Fades::default() } } }
 
 pub fn external_audio(path: PathBuf) -> Result<ExternalAudio> {
     let bytes = media::run(media::command("ffprobe").args(["-v", "error", "-select_streams", "a:0", "-show_entries", "stream=codec_type:format=duration", "-of", "json"]).arg(&path), 15)?;
     let value: serde_json::Value = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
-    if value["streams"].as_array().is_none_or(|s| s.is_empty()) { return Err("El archivo no contiene una pista de audio.".into()); }
-    let duration = value["format"]["duration"].as_str().and_then(|v| v.parse::<f64>().ok()).filter(|v| v.is_finite() && *v > 0.0 && *v <= 14400.0).ok_or("El audio debe tener una duración válida de hasta cuatro horas.")?;
-    Ok(ExternalAudio { path, duration, start: 0.0, db: 0.0, length: None })
+    if value["streams"].as_array().is_none_or(|s| s.is_empty()) { return Err(tr!("The file does not contain an audio track.").into()); }
+    let duration = value["format"]["duration"].as_str().and_then(|v| v.parse::<f64>().ok()).filter(|v| v.is_finite() && *v > 0.0 && *v <= 14400.0).ok_or(tr!("The audio must have a valid duration of up to four hours."))?;
+    Ok(ExternalAudio { path, duration, start: 0.0, db: 0.0, length: None, fades: crate::fades::Fades::default() })
 }
 
 pub fn audio_graph(info: &Info, options: &Options, length: f64) -> Result<Option<String>> {
-    if !options.master_db.is_finite() || !(-30.0..=18.0).contains(&options.master_db) { return Err("El ajuste final debe estar entre -30 y +18 dB.".into()); }
-    if !options.original_db.is_finite() || !(-60.0..=12.0).contains(&options.original_db) { return Err("El volumen original debe estar entre -60 y +12 dB.".into()); }
+    if !options.master_db.is_finite() || !(-30.0..=18.0).contains(&options.master_db) { return Err(tr!("The output adjustment must be between -30 and +18 dB.").into()); }
+    if !options.original_db.is_finite() || !(-60.0..=12.0).contains(&options.original_db) { return Err(tr!("The original audio volume must be between -60 and +12 dB.").into()); }
     let mut graph = String::new(); let mut inputs = Vec::new();
     if options.mode == SoundMode::Original && info.has_audio {
         graph.push_str(&format!("[0:a:0]asetpts=PTS-STARTPTS,aresample=48000,aformat=channel_layouts=stereo,volume={:.3}dB,apad,atrim=duration={length:.6}[original];", options.original_db));
         inputs.push("[original]");
     }
     if options.mode == SoundMode::Replace {
-        let extra = options.external.as_ref().ok_or("Elige un archivo de audio local o selecciona Sin audio.")?;
-        if !extra.db.is_finite() || !(-60.0..=12.0).contains(&extra.db) || !extra.start.is_finite() || extra.start < 0.0 || extra.start >= extra.duration { return Err("Revisa el volumen y el inicio del audio añadido.".into()); }
-        if !extra.path.is_file() { return Err("No se encuentra el archivo de audio añadido. Vuelve a seleccionarlo.".into()); }
+        let extra = options.external.as_ref().ok_or(tr!("Choose a local audio file or select Export without audio."))?;
+        if !extra.db.is_finite() || !(-60.0..=12.0).contains(&extra.db) || !extra.start.is_finite() || extra.start < 0.0 || extra.start >= extra.duration { return Err(tr!("Check the added audio's volume and start time.").into()); }
+        if !extra.path.is_file() { return Err(tr!("The added audio file could not be found. Select it again.").into()); }
         let take = extra.length.unwrap_or(extra.duration - extra.start);
-        if !take.is_finite() || take <= 0.0 || extra.start + take > extra.duration + 0.001 { return Err("El fragmento del audio añadido no es válido. Revisa su inicio y final.".into()); }
-        graph.push_str(&format!("[1:a:0]atrim=duration={:.6},asetpts=PTS-STARTPTS,aresample=48000,aformat=channel_layouts=stereo,volume={:.3}dB,apad,atrim=duration={length:.6}[extra];", take.min(length), extra.db));
+        if !take.is_finite() || take <= 0.0 || extra.start + take > extra.duration + 0.001 { return Err(tr!("The added audio selection is invalid. Check its start and end times.").into()); }
+        graph.push_str(&format!("[1:a:0]atrim=duration={:.6},asetpts=PTS-STARTPTS,aresample=48000,aformat=channel_layouts=stereo,{},volume={:.3}dB,apad,atrim=duration={length:.6}[extra];", take.min(length), extra.fades.filter(take.min(length)), extra.db));
         inputs.push("[extra]");
     }
     if inputs.is_empty() { return Ok(None); }
     graph.push_str(&inputs.concat());
-    graph.push_str(&format!("volume={:.3}dB,alimiter=limit=0.95:level=0:latency=1[mixed]", options.master_db));
+    graph.push_str(&format!("{},volume={:.3}dB,alimiter=limit=0.95:level=0:latency=1[mixed]", options.fades.filter(length), options.master_db));
     Ok(Some(graph))
 }
 
@@ -102,11 +102,11 @@ pub fn output_size(info: &Info, height: u32) -> (u32, u32) {
 }
 
 pub fn export(audio: &Audio, start: f64, length: f64, output: &Path, options: &Options) -> Result<()> {
-    let info = audio.video.as_ref().ok_or("No hay un video cargado.")?;
-    if !start.is_finite() || !length.is_finite() || start < 0.0 || length <= 0.0 || start + length > audio.duration + 0.001 { return Err("El intervalo no es válido.".into()); }
-    if !output.extension().is_some_and(|e| e.eq_ignore_ascii_case("webm")) { return Err("El destino debe terminar en .webm.".into()); }
-    if output.exists() && std::fs::canonicalize(output).ok() == std::fs::canonicalize(&audio.path).ok() { return Err("Elige otro nombre para conservar el archivo original.".into()); }
-    if let Some(extra) = &options.external { if output.exists() && std::fs::canonicalize(output).ok() == std::fs::canonicalize(&extra.path).ok() { return Err("El destino no puede reemplazar el archivo de audio añadido.".into()); } }
+    let info = audio.video.as_ref().ok_or(tr!("No video is loaded."))?;
+    if !start.is_finite() || !length.is_finite() || start < 0.0 || length <= 0.0 || start + length > audio.duration + 0.001 { return Err(tr!("The selected range is invalid.").into()); }
+    if !output.extension().is_some_and(|e| e.eq_ignore_ascii_case("webm")) { return Err(tr!("The output filename must end in .webm.").into()); }
+    if output.exists() && std::fs::canonicalize(output).ok() == std::fs::canonicalize(&audio.path).ok() { return Err(tr!("Choose a different filename to preserve the original file.").into()); }
+    if let Some(extra) = &options.external { if output.exists() && std::fs::canonicalize(output).ok() == std::fs::canonicalize(&extra.path).ok() { return Err(tr!("The output cannot overwrite the added audio file.").into()); } }
     let graph = audio_graph(info, options, length)?;
     let (width, height) = output_size(info, options.height);
     let (crf, bitrate) = match options.quality { Quality::Light => ("37", "64k"), Quality::Balanced => ("32", "96k"), Quality::High => ("26", "128k") };
@@ -120,7 +120,7 @@ pub fn export(audio: &Audio, start: f64, length: f64, output: &Path, options: &O
     if info.alpha { cmd.args(["-auto-alt-ref", "0"]); }
     if let Some(graph) = graph { cmd.args(["-filter_complex", &graph, "-map", "[mixed]", "-c:a", "libopus", "-b:a", bitrate]); } else { cmd.arg("-an"); }
     media::run(cmd.args(["-map_metadata", "-1", "-f", "webm"]).arg(temp.path()), 7200)?;
-    temp.persist(output).map_err(|e| format!("No se pudo guardar el WebM: {e}"))?;
+    temp.persist(output).map_err(|e| tf!("Could not save the WebM file: {e}"))?;
     Ok(())
 }
 

@@ -43,19 +43,19 @@ pub fn run(cmd: &mut Command, timeout: u64) -> Result<Vec<u8>> {
     run_report(cmd, timeout).map(|(bytes, _)| bytes)
 }
 pub fn run_report(cmd: &mut Command, timeout: u64) -> Result<(Vec<u8>, String)> {
-    if cancelled() { return Err("Operación cancelada.".into()); }
+    if cancelled() { return Err(tr!("Operation canceled.").into()); }
     let mut out = tempfile::tempfile().map_err(|e| e.to_string())?;
     let mut err = tempfile::tempfile().map_err(|e| e.to_string())?;
     cmd.stdout(out.try_clone().map_err(|e| e.to_string())?)
         .stderr(err.try_clone().map_err(|e| e.to_string())?);
-    let mut child = cmd.spawn().map_err(|e| format!("No se pudo iniciar {:?}: {e}. Revisa la carpeta tools.", cmd.get_program()))?;
+    let mut child = cmd.spawn().map_err(|e| tf!("Could not start {:?}: {e}. Check the tools folder.", cmd.get_program()))?;
     let started = Instant::now();
     let status = loop {
-        if cancelled() { terminate(&mut child); return Err("Operación cancelada.".into()); }
+        if cancelled() { terminate(&mut child); return Err(tr!("Operation canceled.").into()); }
         if let Some(status) = child.try_wait().map_err(|e| e.to_string())? { break status; }
         if started.elapsed().as_secs() > timeout {
             terminate(&mut child);
-            return Err("La operación excedió el tiempo de espera. Revisa la conexión o prueba otro archivo.".into());
+            return Err(tr!("The operation timed out. Check your connection or try another file.").into());
         }
         thread::sleep(Duration::from_millis(70));
     };
@@ -101,29 +101,29 @@ impl Waveform {
 pub struct Audio { pub path: PathBuf, pub duration: f64, pub waveform: Arc<Waveform>, pub video: Option<crate::video::Info> }
 
 pub fn load(path: PathBuf) -> Result<Audio> {
-    if !path.is_file() { return Err("La pista no existe. Comprueba la ruta de la lista M3U.".into()); }
+    if !path.is_file() { return Err(tr!("The track does not exist. Check the path in the M3U playlist.").into()); }
     let bytes = run(command("ffprobe").args(["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1"]).arg(&path), 30)?;
-    let duration: f64 = String::from_utf8_lossy(&bytes).trim().parse().map_err(|_| "No se pudo leer la duración del audio.")?;
-    if !duration.is_finite() || duration <= 0.0 || duration > 14400.0 { return Err("Selecciona un audio con duración válida de hasta 4 horas.".into()); }
+    let duration: f64 = String::from_utf8_lossy(&bytes).trim().parse().map_err(|_| tr!("Could not read the audio duration."))?;
+    if !duration.is_finite() || duration <= 0.0 || duration > 14400.0 { return Err(tr!("Choose an audio file with a valid duration of up to 4 hours.").into()); }
     let pcm = run(command("ffmpeg").args(["-v", "error", "-nostdin", "-i"]).arg(&path)
         .args(["-t", "14400", "-vn", "-ac", "1", "-ar", "8000", "-f", "s16le", "pipe:1"]), 240)?;
-    if pcm.is_empty() { return Err("El archivo no contiene una pista de audio decodificable.".into()); }
+    if pcm.is_empty() { return Err(tr!("The file does not contain a decodable audio track.").into()); }
     let waveform = Arc::new(Waveform::from_pcm(&pcm));
     Ok(Audio { path, duration, waveform, video: None })
 }
 
 pub fn playlist(path: &Path) -> Result<Vec<PathBuf>> {
     let bytes = fs::read(path).map_err(|e| e.to_string())?;
-    let text = String::from_utf8(bytes).map_err(|_| "La lista debe estar en UTF-8. Guárdala como M3U8.")?;
+    let text = String::from_utf8(bytes).map_err(|_| tr!("The playlist must use UTF-8 encoding. Save it as M3U8."))?;
     let base = path.parent().unwrap_or(Path::new("."));
     let mut tracks = Vec::new();
     for line in text.trim_start_matches('\u{feff}').lines().map(str::trim) {
         if line.is_empty() || line.starts_with('#') { continue; }
-        if line.contains("://") { return Err("Esta versión admite M3U con pistas locales. Para YouTube, utiliza el campo de enlace.".into()); }
+        if line.contains("://") { return Err(tr!("This version supports M3U playlists with local tracks. For YouTube, use the link field.").into()); }
         let track = PathBuf::from(line);
         tracks.push(if track.is_absolute() { track } else { base.join(track) });
     }
-    if tracks.is_empty() { return Err("La lista M3U no contiene pistas.".into()); }
+    if tracks.is_empty() { return Err(tr!("The M3U playlist does not contain any tracks.").into()); }
     Ok(tracks)
 }
 
@@ -149,17 +149,17 @@ impl Playback {
     pub fn finished(&mut self) -> Result<bool> {
         let audio_done = if let Some(child) = &mut self.child {
             match child.try_wait().map_err(|e| e.to_string())? {
-                Some(status) if !status.success() => return Err(self.audio_error.lock().ok().filter(|s| !s.is_empty()).map(|s| format!("No se pudo reproducir el audio: {s}")).unwrap_or_else(|| "Falló la reproducción de audio. Revisa el archivo y el dispositivo de sonido.".into())),
+                Some(status) if !status.success() => return Err(self.audio_error.lock().ok().filter(|s| !s.is_empty()).map(|s| tf!("Could not play the audio: {s}")).unwrap_or_else(|| tr!("Audio playback failed. Check the file and your audio device.").into())),
                 Some(_) => true, None => false,
             }
         } else { true };
         if let Some(decoder) = &mut self.decoder {
             if let Some(status) = decoder.try_wait().map_err(|e| e.to_string())? {
-                if !status.success() { return Err("No se pudo decodificar el video para su vista previa.".into()); }
+                if !status.success() { return Err(tr!("Could not decode the video for preview.").into()); }
             }
         }
         if let Some(mixer) = &mut self.mixer {
-            if let Some(status) = mixer.try_wait().map_err(|e| e.to_string())? { if !status.success() { return Err("No se pudo preparar la mezcla de audio. Revisa el archivo añadido.".into()); } }
+            if let Some(status) = mixer.try_wait().map_err(|e| e.to_string())? { if !status.success() { return Err(tr!("Could not prepare the audio mix. Check the added audio file.").into()); } }
         }
         Ok(self.video_done.as_ref().map_or(audio_done, |done| done.load(Ordering::Relaxed) && audio_done))
     }
@@ -186,9 +186,9 @@ fn audio_clock(line: &[u8]) -> Option<f64> {
 pub fn preview(audio: &Audio, start: f64, length: f64) -> Result<Playback> {
     spawn_preview(audio, start, length, 100)
 }
-pub fn preview_gain(audio: &Audio, start: f64, length: f64, gain: f32) -> Result<Playback> {
-    if gain.abs() < 0.001 { return preview(audio, start, length); }
-    let options = crate::video::Options { mode: crate::video::SoundMode::Original, master_db: gain, ..Default::default() };
+pub fn preview_effects(audio: &Audio, start: f64, length: f64, gain: f32, fades: crate::fades::Fades) -> Result<Playback> {
+    if gain.abs() < 0.001 && fades.bounded(length) == crate::fades::Fades::default() { return preview(audio, start, length); }
+    let options = crate::video::Options { mode: crate::video::SoundMode::Original, master_db: gain, fades, ..Default::default() };
     spawn_preview_with_options(audio, start, length, 100, Some(&options))
 }
 pub fn preview_video(audio: &Audio, start: f64, length: f64, options: &crate::video::Options) -> Result<Playback> {
@@ -218,13 +218,13 @@ fn spawn_preview_with_options(audio: &Audio, start: f64, length: f64, volume: u8
         mixer_cmd.args(["-v", "error", "-nostdin", "-ss", &start.to_string(), "-i"]).arg(&audio.path);
         crate::video::add_external_input(&mut mixer_cmd, options);
         let mut mixer = mixer_cmd.args(["-filter_complex", graph, "-map", "[mixed]", "-t", &length.to_string(), "-ar", "48000", "-ac", "2", "-f", "f32le", "pipe:1"]).stdout(Stdio::piped()).stderr(Stdio::null()).spawn().map_err(|e| e.to_string())?;
-        let pipe = mixer.stdout.take().ok_or("No se pudo iniciar el audio de la mezcla.")?;
+        let pipe = mixer.stdout.take().ok_or(tr!("Could not start the mixed audio."))?;
         player.mixer = Some(mixer);
         cmd.args(["-f", "f32le", "-ar", "48000", "-ch_layout", "stereo", "-i", "pipe:0"]).stdin(Stdio::from(pipe));
         clock_offset = start;
     } else { cmd.args(["-ss", &start.to_string(), "-t", &length.to_string()]).arg(&audio.path); }
-    let mut child = cmd.stdout(Stdio::null()).stderr(Stdio::piped()).spawn().map_err(|e| format!("No se pudo reproducir el archivo: {e}. Comprueba ffplay."))?;
-    let stderr = child.stderr.take().ok_or("No se pudo leer el reloj de reproducción.")?;
+    let mut child = cmd.stdout(Stdio::null()).stderr(Stdio::piped()).spawn().map_err(|e| tf!("Could not play the file: {e}. Check ffplay."))?;
+    let stderr = child.stderr.take().ok_or(tr!("Could not read the playback clock."))?;
     player.child = Some(child);
     let updates = audio_clock_state.clone(); let alive = audio_alive.clone();
     let errors = player.audio_error.clone();
@@ -254,8 +254,8 @@ fn spawn_preview_with_options(audio: &Audio, start: f64, length: f64, volume: u8
         let filter = format!("fps={fps:.6},scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2");
         let mut decoder = command("ffmpeg").args(["-v", "error", "-nostdin", "-ss", &start.to_string(), "-i"]).arg(&audio.path)
             .args(["-t", &length.to_string(), "-map", "0:v:0", "-an", "-vf", &filter, "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"])
-            .stdout(Stdio::piped()).stderr(Stdio::null()).spawn().map_err(|e| format!("No se pudo iniciar la vista previa integrada: {e}"))?;
-        let stdout = decoder.stdout.take().ok_or("No se pudo leer el video.")?;
+            .stdout(Stdio::piped()).stderr(Stdio::null()).spawn().map_err(|e| tf!("Could not start the embedded preview: {e}"))?;
+        let stdout = decoder.stdout.take().ok_or(tr!("Could not read the video."))?;
         player.decoder = Some(decoder);
         let done = Arc::new(AtomicBool::new(false)); player.video_done = Some(done.clone());
         let stop = player.stopped.clone(); let output = player.frame.clone(); let shown_clock = player.clock.clone();
@@ -295,18 +295,25 @@ pub fn export(audio: &Audio, start: f64, length: f64, output: &Path) -> Result<(
     export_gain(audio, start, length, output, 0.0)
 }
 pub fn export_gain(audio: &Audio, start: f64, length: f64, output: &Path, gain: f32) -> Result<()> {
-    if !gain.is_finite() || !(-30.0..=18.0).contains(&gain) { return Err("El ajuste final debe estar entre -30 y +18 dB.".into()); }
-    if !start.is_finite() || !length.is_finite() || length <= 0.0 || start < 0.0 || start + length > audio.duration + 0.001 { return Err("El intervalo de corte no es válido.".into()); }
-    if output.exists() && fs::canonicalize(output).ok() == fs::canonicalize(&audio.path).ok() { return Err("Elige otro nombre para conservar el audio original.".into()); }
+    export_effects(audio, start, length, output, gain, crate::fades::Fades::default())
+}
+pub fn audio_filter(gain: f32, fades: crate::fades::Fades, length: f64) -> String {
+    let filter = fades.filter(length);
+    if gain.abs() >= 0.001 { format!("{filter},volume={gain:.3}dB,alimiter=limit=0.95:level=0:latency=1") } else { filter }
+}
+pub fn export_effects(audio: &Audio, start: f64, length: f64, output: &Path, gain: f32, fades: crate::fades::Fades) -> Result<()> {
+    if !gain.is_finite() || !(-30.0..=18.0).contains(&gain) { return Err(tr!("The output adjustment must be between -30 and +18 dB.").into()); }
+    if !start.is_finite() || !length.is_finite() || length <= 0.0 || start < 0.0 || start + length > audio.duration + 0.001 { return Err(tr!("The trim range is invalid.").into()); }
+    if output.exists() && fs::canonicalize(output).ok() == fs::canonicalize(&audio.path).ok() { return Err(tr!("Choose a different filename to preserve the original audio.").into()); }
     let ext = output.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
-    let (format, codec) = match ext.as_str() { "wav" => ("wav", "pcm_s16le"), "mp3" => ("mp3", "libmp3lame"), _ => return Err("El archivo de salida debe terminar en .wav o .mp3.".into()) };
+    let (format, codec) = match ext.as_str() { "wav" => ("wav", "pcm_s16le"), "mp3" => ("mp3", "libmp3lame"), _ => return Err(tr!("The output filename must end in .wav or .mp3.").into()) };
     let temp = tempfile::NamedTempFile::new_in(output.parent().unwrap_or(Path::new("."))).map_err(|e| e.to_string())?;
     let mut cmd = command("ffmpeg");
     cmd.args(["-v", "error", "-nostdin", "-y", "-ss", &format!("{start:.6}"), "-i"]).arg(&audio.path)
         .args(["-t", &format!("{length:.6}"), "-map", "0:a:0", "-vn", "-c:a", codec, "-ar", "44100", "-ac", "2"]);
-    if gain.abs() >= 0.001 { cmd.args(["-af", &format!("volume={gain:.3}dB,alimiter=limit=0.95:level=0:latency=1")]); }
+    cmd.args(["-af", &audio_filter(gain, fades, length)]);
     run(cmd.args(["-f", format]).arg(temp.path()), 120)?;
-    temp.persist(output).map_err(|e| format!("No se pudo guardar el corte: {e}"))?;
+    temp.persist(output).map_err(|e| tf!("Could not save the clip: {e}"))?;
     Ok(())
 }
 
@@ -315,23 +322,31 @@ pub fn youtube(url: &str, folder: &Path) -> Result<PathBuf> {
 }
 
 pub fn youtube_media(url: &str, folder: &Path, video: bool) -> Result<PathBuf> {
-    let rest = url.strip_prefix("https://").or_else(|| url.strip_prefix("http://")).ok_or("Pega un enlace HTTP o HTTPS de YouTube.")?;
+    let rest = url.strip_prefix("https://").or_else(|| url.strip_prefix("http://")).ok_or(tr!("Paste an HTTP or HTTPS YouTube link."))?;
     let host = rest.split('/').next().unwrap_or("").to_ascii_lowercase();
-    if !["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"].contains(&host.as_str()) { return Err("El enlace debe pertenecer a YouTube.".into()); }
+    if !["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"].contains(&host.as_str()) { return Err(tr!("The link must be a YouTube URL.").into()); }
     fs::create_dir_all(folder).map_err(|e| e.to_string())?;
     let mut cmd = command("yt-dlp");
-    cmd.args(["--ignore-config", "--no-playlist", "--no-progress", "--socket-timeout", "25", "--retries", "2", "--max-filesize", if video { "2G" } else { "500M" }, "--match-filter", "!is_live & duration <= 14400", "--windows-filenames", "--print", "after_move:filepath", "--no-simulate"]);
+    cmd.args(["--ignore-config", "--no-playlist", "--no-progress", "--socket-timeout", "25", "--retries", "2", "--remote-components", "ejs:github", "--encoding", "utf-8", "--max-filesize", if video { "2G" } else { "500M" }, "--match-filter", "!is_live & duration <= 14400", "--windows-filenames", "--print", "after_move:filepath", "--no-simulate"]);
     if video { cmd.args(["-f", "bv*+ba/b", "--merge-output-format", "mkv"]); }
     else { cmd.args(["-f", "bestaudio/best", "-x", "--audio-format", "mp3", "--audio-quality", "0"]); }
     let ffmpeg = tool("ffmpeg");
     if ffmpeg.is_absolute() { cmd.arg("--ffmpeg-location").arg(ffmpeg.parent().unwrap()); }
     let deno = tool("deno");
     if deno.is_absolute() { cmd.arg("--js-runtimes").arg(format!("deno:{}", deno.display())); }
-    let bytes = run(cmd.arg("-o").arg(folder.join("%(title).120s [%(id)s].%(ext)s")).arg("--").arg(url), 900)?;
+    let bytes = run(cmd.arg("-o").arg(folder.join("%(title).120s [%(id)s].%(ext)s")).arg("--").arg(url), 900).map_err(|error| {
+        let lower = error.to_ascii_lowercase();
+        let help = if lower.contains("403") {
+            tr!("YouTube rejected the download (403). Retry once; if it persists, the video or your network may be restricted.")
+        } else if lower.contains("sign in") || lower.contains("private video") || lower.contains("not available") {
+            tr!("YouTube requires access or this video is unavailable. Try a public video available in your region.")
+        } else { tr!("YouTube download failed. Check your connection and the video link.") };
+        format!("{help}\n\n{error}")
+    })?;
     let text = String::from_utf8_lossy(&bytes);
-    let path = text.lines().rev().find(|line| !line.trim().is_empty()).ok_or("La descarga no produjo un archivo. Comprueba el enlace y actualiza yt-dlp.")?;
+    let path = text.lines().rev().find(|line| !line.trim().is_empty()).ok_or(tr!("The download did not produce a file. Check the link and update yt-dlp."))?;
     let path = PathBuf::from(path.trim());
-    if !path.is_file() { return Err("No se encontró el audio descargado.".into()); }
+    if !path.is_file() { return Err(tr!("The downloaded audio could not be found.").into()); }
     Ok(path)
 }
 
@@ -348,6 +363,39 @@ pub fn save_history(path: &Path, entries: &[HistoryEntry]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    #[ignore = "requires YouTube network access; run explicitly"]
+    fn live_youtube_audio_and_video_download() {
+        let dir = tempfile::tempdir().unwrap();
+        let url = "https://www.youtube.com/watch?v=qLhj3HJ-5v8";
+        let audio = youtube_media(url, &dir.path().join("audio with spaces"), false).unwrap();
+        assert!(load(audio).unwrap().duration > 0.0);
+        let video = youtube_media(url, &dir.path().join("video with spaces"), true).unwrap();
+        assert!(crate::video::load(video).unwrap().video.unwrap().has_audio);
+    }
+    #[test] fn exported_fades_match_preview_filter_and_measured_loudness() {
+        let dir = tempfile::tempdir().unwrap(); let source = dir.path().join("source.wav");
+        run(command("ffmpeg").args(["-v", "error", "-f", "lavfi", "-i", "sine=frequency=1000:duration=5"]).arg(&source), 20).unwrap();
+        let audio = load(source).unwrap();
+        let fades = crate::fades::Fades { input: 1.0, output: 1.0 };
+        let output = dir.path().join("faded.wav");
+        export_effects(&audio, 0.75, 3.0, &output, 0.0, fades).unwrap();
+        let result = load(output.clone()).unwrap(); assert!((result.duration - 3.0).abs() < 0.002);
+        let pcm = run(command("ffmpeg").args(["-v", "error", "-i"]).arg(output).args(["-f", "f32le", "-ac", "1", "-ar", "48000", "pipe:1"]), 20).unwrap();
+        let samples: Vec<f32> = pcm.chunks_exact(4).map(|b| f32::from_le_bytes(b.try_into().unwrap())).collect();
+        let rms = |from: f64, to: f64| { let data = &samples[(from*48000.0) as usize..(to*48000.0) as usize]; (data.iter().map(|v| (*v as f64).powi(2)).sum::<f64>() / data.len() as f64).sqrt() };
+        let center = rms(1.2, 1.4);
+        assert!(rms(0.0, 0.05) < center * 0.06);
+        assert!(rms(2.95, 3.0) < center * 0.06);
+        assert!((rms(0.45, 0.55)/center - 0.5).abs() < 0.03);
+        let preview_options = crate::video::Options { mode: crate::video::SoundMode::Original, fades, ..Default::default() };
+        let info = crate::video::Info { width: 0, height: 0, fps: 0.0, has_audio: true, alpha: false };
+        let graph = crate::video::audio_graph(&info, &preview_options, 3.0).unwrap().unwrap();
+        assert!(graph.contains(&fades.filter(3.0)));
+        let measured = crate::sound::measure_fades(&audio, 0.75, 3.0, None, 0.0, fades).unwrap();
+        let exported = crate::sound::measure(&result, 0.0, 3.0, None, 0.0).unwrap();
+        assert!((measured.loudness.unwrap() - exported.loudness.unwrap()).abs() < 0.2);
+    }
     #[test] fn playback_reports_real_absolute_audio_clock_after_seek() {
         let dir = tempfile::tempdir().unwrap(); let path = dir.path().join("clock.wav");
         run(command("ffmpeg").args(["-v", "error", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo", "-t", "5"]).arg(&path), 20).unwrap();

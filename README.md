@@ -1,200 +1,151 @@
 # Shiny Twitch Creator Tool
 
-Editor de escritorio para Windows, escrito en Rust, para crear alertas de Twitch, ringtones y notificaciones a partir de audio, video y GIF.
+A portable Windows desktop editor built with Rust for creating Twitch alerts, ringtones, and notifications from audio, video, and animated GIFs.
 
-## Funciones principales
+[Download the latest portable app](https://github.com/shinymoon18/Shiny-Twitch-Creator-Tool/releases/latest)
 
-- Audio local, videos, GIF animados y descarga de audio/video de YouTube.
-- Presets de 9 y 11 segundos, ringtone de 30 segundos y notificaciones de 1, 1.5, 3, 4 y 5 segundos.
-- Cortes libres con onda, zoom, pasos de milisegundos y marcadores durante reproducción.
-- Reproducción de audio y video dentro del editor.
-- Audio del video: conservar el original, quitarlo o sustituirlo por un fragmento de un archivo local.
-- Editor independiente para recortar el audio añadido antes de combinarlo con la imagen.
-- Medición de volumen y picos, ajuste manual en dB y referencia LUFS para igualar alertas.
-- Exportación WAV/MP3 y WebM VP9, con resolución y calidad configurables.
-- Historial, selección de carpeta de salida y temas oscuros personalizables.
-- Distribución portable mediante un solo ejecutable con las herramientas incluidas.
+## Features
 
-## Código y ejecutable
+- Open local audio, video, and animated GIF files, or download audio and video from YouTube.
+- Start with 9- or 11-second Twitch alerts, a 30-second ringtone, or 1-, 1.5-, 3-, 4-, and 5-second notifications.
+- Set any custom duration using editable start/end times, draggable selection edges, and waveform zoom.
+- Move the start, end, or entire selection in steps of 1 ms, 5 ms, 100 ms, 500 ms, or 1 minute.
+- Extend or shorten a clip by those amounts while keeping its start fixed.
+- Preview audio and video inside the editor and mark start/end points during playback.
+- Adjust fade-in and fade-out by dragging the green waveform handles or entering precise durations.
+- Keep a video's original audio, export it silently, or replace its sound with a selected section of a local audio file.
+- Measure loudness and true peaks, adjust gain manually, and compare alerts against a personal LUFS target.
+- Export WAV/MP3 audio and VP9 WebM video with selectable resolution and quality.
+- Keep a history of exported clips and choose where to save each file.
+- Choose English or Spanish, follow the Windows display language, and customize dark themes, accent colors, and interface scale.
+- Run from a single portable executable with the media tools included.
 
-Este repositorio contiene el código fuente y los scripts de compilación. El ejecutable portable se distribuye como archivo adjunto de una versión en **Releases**; los directorios `dist`, `target`, `.tools` y los datos personales no forman parte del código publicado.
+## Download and run
 
-Consulta [THIRD-PARTY.md](THIRD-PARTY.md) para los componentes de terceros y [VALIDATION.md](VALIDATION.md) para las verificaciones realizadas.
+1. Open [Releases](https://github.com/shinymoon18/Shiny-Twitch-Creator-Tool/releases/latest) and download the portable `.exe` under **Assets**.
+2. Place it in a folder where you have write permission, then run it. Rust and the media tools do not need to be installed separately.
+3. The first launch extracts the bundled tools into **Audio Twitch Cut Datos** beside the executable. This can take a few seconds and requires space for the extracted tools as well as the executable.
 
-## Recortar el audio añadido y reemplazar el original (versión 1.1)
+To move just the app, copy the executable. To keep your history, preferences, and downloads too, copy **Audio Twitch Cut Datos** as well. Source files and exported clips saved elsewhere must be copied separately; history entries retain their original paths.
 
-Al elegir **Reemplazar con archivo local**, el sonido original del video se descarta completamente. Se conservan las opciones independientes **Mantener audio original** y **Cortar sin audio**; ya no se suman el original y el archivo local.
+The existing data-folder name is retained for compatibility. You do not need to run the app as administrator.
 
-1. En **Video / GIF → Audio del WebM**, selecciona **Reemplazar con archivo local** y elige tu archivo.
-2. Se abre **Recortar audio para el video**, con la onda del audio y controles de zoom.
-3. Ajusta **Inicio**, **Final** y **Duración**, arrastra los extremos o el cuerpo de la selección, usa 9/11 segundos o elige **Todo el audio**. También puedes mover por pasos de 1 ms, 5 ms, 100 ms, 500 ms o 1 minuto, y sumar o quitar esa cantidad a la duración.
-4. Usa **Escuchar fragmento**, **Escuchar desde aquí** y los marcadores de inicio/final para localizar lo que quieres.
-5. Pulsa **Usar este fragmento en el video**. Para modificarlo después, pulsa **Recortar este audio…** junto a su nombre.
+## Edit audio
 
-El audio elegido se alinea con el inicio del corte de video. Solo se utiliza su intervalo seleccionado: si termina antes, el resto queda en silencio; si dura más, se limita a la duración del corte de video. Esto se aplica tanto a la reproducción integrada como al WebM exportado. El archivo de audio original no se modifica.
+1. Select **Audio**, then **Open audio or M3U playlist**. WAV, MP3, FLAC, OGG, and M4A files are supported. M3U/M3U8 playlists can reference local files using absolute paths or paths relative to the playlist.
+2. Alternatively, paste a YouTube link and choose **Download audio only**.
+3. Choose a preset or set the start, end, and duration directly. Drag the selection edges to resize it, or drag inside the selection to move it.
+4. Use **Preview selection** or **Preview from here**, then **Mark start** and **Mark end** to capture points during playback.
+5. Choose WAV or MP3 and select **Trim and save…**. The save dialog lets you choose the folder and filename.
 
-El programa se llamaba anteriormente Audio Twitch Cut. La versión 1.0.1 actualiza el título, la cabecera y el nombre del ejecutable. Se mantiene la carpeta **Audio Twitch Cut Datos** y la identidad interna anterior para reutilizar el historial y las preferencias existentes.
+The status message shows the output path. **Show latest clip** opens its location, and **Recent clips** preserves the source, interval, date, and destination between sessions.
 
-Aplicación de escritorio para Windows, escrita en Rust, para preparar alertas de Twitch.
+If a preset fits the track but not the remaining time, its start is adjusted to preserve its duration. If the entire track is shorter, its actual duration is used without adding silence. WAV is the best choice when sample-accurate duration matters; MP3 can include encoder delay.
 
-## Un solo ejecutable portable (versión 1.0)
+### Zoom and precise selection
 
-El archivo **Shiny Twitch Creator Tool Portable 1.1.exe** contiene el editor, FFmpeg, ffprobe, ffplay, yt-dlp, Deno y sus avisos de licencia. Solo necesitas copiar ese `.exe` a tu PC o memoria USB. No requiere instalar Rust ni descargar herramientas al abrirlo. La descarga de YouTube sigue necesitando conexión a Internet.
+**Zoom in +**, **Zoom out -**, **Fit selection**, and **Fit entire track** control the visible range. The minimum visible window is 50 ms. The waveform stores peaks at millisecond resolution and includes a time ruler.
 
-En la primera apertura prepara automáticamente sus herramientas comprimidas dentro de **Audio Twitch Cut Datos**, junto al ejecutable. Puede tardar unos segundos y requiere espacio libre para las herramientas descomprimidas, además del propio exe. Las aperturas siguientes reutilizan esa copia. Es necesario colocarlo en una carpeta donde tengas permiso de escritura; no hace falta ejecutarlo como administrador.
+Use **Scroll track**, **Previous view**, and **Next view** to explore without changing the selection. In the step controls, choose **Start**, **End**, or **Selection** before moving backward or forward. Editing the start keeps the end fixed; editing the end keeps the start fixed; moving the selection keeps its duration.
 
-En esa misma carpeta quedan el historial, los temas y las descargas. Para llevar **solo el programa**, copia únicamente el exe: preparará todo de nuevo en su nueva ubicación. Para llevar también tus preferencias e historial, copia además **Audio Twitch Cut Datos**. Las pistas originales y los cortes guardados fuera de esa carpeta deben copiarse por separado; las entradas del historial conservan sus rutas originales.
+The direct **Add / Remove** buttons change duration while keeping the start fixed. For example, adding 1 ms to a 9-second clip produces 9.001 seconds. Repeated clicks accumulate. The selection cannot cross the track boundaries or become shorter than 1 ms, except when the whole source is shorter.
 
-La primera apertura portable copia el historial y las preferencias de versiones anteriores de este mismo equipo si aún no existen en la carpeta portable. No los elimina de su ubicación anterior.
+### Fade-in and fade-out
 
-Para generar el ejecutable único desde el proyecto:
+Drag the green **IN** handle to change the fade-in duration and the green **OUT** handle to change the fade-out duration. The waveform displays the attenuation. You can also enter exact times in **Fade in (s)** and **Fade out (s)**; **Reset fades** disables both.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/build-single.ps1
-```
+Fades apply to selection preview, exported audio, and loudness measurements. When the clip becomes shorter, fade durations are limited to its length. The local-audio editor used for replacing video sound includes the same controls.
 
-El resultado es `dist/Shiny Twitch Creator Tool Portable 1.1.exe`. Las herramientas, licencias y esta documentación se extraen dentro de la carpeta `herramientas` de los datos portables. El editor se compila con el runtime de C estático.
+## Edit video and GIFs
 
-## Volumen manual para alertas de Twitch (versión 0.9)
+Select **Video / GIF** and open a local file or choose **Download YouTube video**. The app supports MP4, GIF, WebM, MKV, MOV, AVI, and other formats FFmpeg can decode; **All files** allows selecting additional compatible formats.
 
-En la barra inferior pulsa **Normalizar volumen…**. Se abre una ventana independiente dentro del editor, disponible en Audio y Video, para igualar manualmente tus alertas:
+Audio and video keep separate files, selections, and zoom settings while you switch tabs. Presets, precision steps, custom durations, and playback markers work in both workspaces. Video cuts align to the source frames, even when millisecond steps are used.
 
-1. Selecciona el fragmento que quieres guardar y pulsa **Medir este corte**. La medición no cambia el archivo: muestra su volumen percibido en LUFS y su pico más alto en dBTP, con barras visuales.
-2. Mueve el control grande **Ajuste / dB**, usa **−1 dB / +1 dB** o escribe el valor. Un valor negativo baja el volumen, uno positivo lo sube y **Restablecer** vuelve a 0 dB. El intervalo es de −30 a +18 dB.
-3. Pulsa **Escuchar resultado**. Si te gusta, cierra la ventana y guarda normalmente. El mismo ajuste se aplica a la previsualización y al WAV, MP3 o WebM exportado.
-4. Para comparar varias alertas, elige tu referencia personal en **Objetivo / LUFS**. Después de medir, se muestra la diferencia en dB para acercarte a ella. **Usar esta diferencia como ajuste manual** es opcional: solo cambia el volumen cuando tú lo pulsas. No se aplica un perfil automático ni una compresión dinámica para igualar niveles.
-5. Vuelve a medir después de cambiar el corte, las fuentes o los volúmenes. Las mediciones anteriores quedan señaladas como desactualizadas y no se usan para proponer un ajuste nuevo.
+The video preview plays inside the editor. It uses reduced resolution and up to 30 fps for responsiveness; exported video uses the source and your chosen output settings.
 
-El objetivo inicial de −18 LUFS es una referencia editable, no una exigencia de Twitch. Un fragmento muy corto o silencioso puede no producir una medición de volumen percibido válida. Si se necesita subir demasiado, la protección de picos puede limitar el resultado: escucha y mide de nuevo. La medición usa los valores de entrada de [loudnorm de FFmpeg](https://ffmpeg.org/ffmpeg-filters.html#loudnorm); el audio analizado que produciría ese filtro no se guarda.
+Use **Save WebM clip…** to export the selection, or **Convert entire file to WebM…** to convert the complete video or animated GIF. In the export dialog:
 
-### Elegir el sonido del video
+- Choose the original resolution or a maximum height. The app keeps the aspect ratio and does not upscale.
+- Choose **Smaller file**, **Balanced**, or **Higher quality**.
+- Optionally limit sources above 30 fps to 30 fps.
+- Select the audio source and preview the result before saving.
 
-En **Audio del WebM** elige una opción:
+Video is encoded with VP9; included audio uses Opus. The app attempts to preserve source transparency. Final file size depends on duration, resolution, motion, frame rate, and quality, so a fixed size cannot be guaranteed.
 
-- **Mantener audio original**: conserva únicamente el sonido del video. Está disponible si el video tiene pista de audio.
-- **Cortar sin audio**: genera el WebM sin pista de audio, aunque haya un archivo local seleccionado.
-- **Reemplazar con archivo local**: descarta el sonido del video y utiliza el archivo que elijas. Puedes indicar desde qué segundo tomarlo.
+### Choose the video's audio
 
-Los controles de decibelios de cada fuente están dentro de **Volumen de cada fuente (avanzado)**, en la ventana de normalización. Solo se escucha la fuente elegida: original o archivo local.
+In **WebM audio**, choose one of these modes:
 
-## Video silencioso y mezcla de audio (versión 0.8)
+- **Keep original audio:** use only the video's own audio, if present.
+- **Export without audio:** create a WebM with no audio track. This is the default.
+- **Replace with local audio:** remove the original audio completely and use a selected section of a local audio file.
 
-Los WebM se exportan **sin sonido por defecto**, tanto al cortar como al convertir el archivo completo. En la pestaña Video / GIF, el panel **Audio del WebM** permite:
+When replacing audio, choose a file to open **Trim audio for the video**. Use its waveform, zoom, start/end/duration fields, precision steps, playback markers, and fades to select the desired section. Choose **Use this audio clip in the video** to apply it; **Trim this audio…** reopens the editor.
 
-- **Agregar audio local…**: elige WAV, MP3, FLAC, OGG, M4A, AAC, Opus o WebM con audio. El sonido añadido se alinea con el inicio del corte, sin cambiar su duración.
-- **Archivo local / dB** (en los controles avanzados de la nueva ventana): ajusta el volumen del archivo elegido entre −60 y +12 dB. En 0 dB conserva su nivel; valores negativos lo reducen y positivos lo aumentan.
-- **Inicio del audio (s)**: elige desde qué segundo del archivo local se toma el sonido. Si el audio restante es más largo que el corte, se recorta; si es más corto, esa pista se completa con silencio. No se repite en bucle.
-- **Mantener audio original**: conserva solo el sonido del video; se ignora cualquier archivo local que hayas seleccionado previamente.
-- **Cortar sin audio**: desactiva todas las fuentes para el WebM. Puedes conservar el archivo local seleccionado y volver a usarlo después, sin que se cuele en una exportación silenciosa o con solo el original.
+The selected audio starts at the beginning of the video clip. If it is shorter, the remainder is silent; if longer, it is trimmed to the video duration. It is not looped. The video duration and original audio file are preserved. Preview and export use the same source selection.
 
-Los mismos controles aparecen en el diálogo de exportación. **Reproducir selección** permite ver y escuchar la mezcla integrada antes de guardar. Después de cambiar la selección, el archivo añadido o los volúmenes, reproduce otra vez para escuchar el resultado actualizado; las modificaciones de volumen detienen la reproducción que estuviera en curso. La pestaña Audio mantiene su comportamiento anterior.
+## Match alert volume
 
-La previsualización y el WebM usan los mismos ajustes de volumen y limitador de FFmpeg. El limitador reduce los picos elevados. Los decibelios son un ajuste relativo al archivo, no una medición de presión sonora física. Se genera una pista Opus con la fuente elegida cuando se incluye sonido.
+Select **Normalize volume…** to open the alert-volume window. The adjustment is manual:
 
-## Reproducción integrada (versión 0.7)
+1. Select the desired clip and choose **Measure this clip** to see perceived loudness in LUFS and true peak in dBTP.
+2. Adjust **Adjustment / dB**, use the -1/+1 dB buttons, or enter a value. Negative values reduce volume; positive values increase it. **Reset** returns to 0 dB. The output gain range is -30 to +18 dB.
+3. Choose **Preview result**. Once satisfied, close the window and save the clip normally.
+4. To compare alerts, use the same **Target / LUFS**. The app shows the difference toward that target; applying it remains your choice.
+5. Measure again after changing the selection, audio sources, fades, or gain. Previous measurements are marked as outdated.
 
-Los videos y GIF se reproducen en movimiento dentro de **Vista previa de video**, en la misma ventana del editor. Ya no se abre una ventana externa. **Reproducir selección**, **Reproducir desde aquí**, **Detener**, **Marcar inicio** y **Marcar final** actúan sobre esta reproducción integrada. Desde la versión 0.8, el sonido depende de las fuentes que actives en **Audio del WebM**; la vista previa silenciosa no necesita un dispositivo de audio para mostrar la imagen.
+The initial -18 LUFS target is an editable personal reference, not a Twitch requirement. Silent or very short clips may not produce a valid loudness reading. Peak protection can limit large boosts, so preview and measure again. Source-specific volume controls are available under **Source volume (advanced)**.
 
-La vista previa usa hasta 30 fps y una resolución reducida para mantenerla fluida. Esta reducción solo afecta a la previsualización; la exportación sigue utilizando el original y la resolución/calidad que elijas. Los fotogramas se sincronizan con el reloj de audio cuando existe, y con un reloj de reproducción propio cuando no hay sonido.
+## Language and appearance
 
-## Video, GIF y temas (versión 0.6)
+Open **Options → Language / Idioma** and choose **System default**, **English**, or **Español**. On first launch, Spanish Windows display languages select Spanish; other display languages use English. A manual choice is saved for future launches.
 
-Las pestañas **Audio** y **Video / GIF** aparecen en la cabecera. Cada una conserva su archivo, selección, zoom y controles mientras alternas entre ellas. El historial sigue siendo común y distingue Audio de Video. Los presets de 9 y 11 segundos, la duración libre, los pasos de precisión, sumar/quitar tiempo y los marcadores durante reproducción funcionan en ambos apartados.
+Inside Options, **Customize appearance…** offers Night, OLED, Ocean, Rose, and Forest themes, a custom accent color, and interface scale. All themes are dark.
 
-### Editar video y convertir a WebM
+## YouTube downloads and limitations
 
-1. Selecciona **Video / GIF** y pulsa **Abrir video o GIF**. Se admiten MP4, GIF animado, MKV, WebM, MOV, AVI y otros formatos que FFmpeg pueda decodificar. El filtro **Todos los archivos** permite elegir otros formatos compatibles.
-2. Como alternativa, pega un enlace de YouTube y pulsa **Descargar video de YouTube**. Se descarga el video con su audio disponible y se carga para editarlo; los originales se conservan en `videos` dentro de la carpeta de datos de la aplicación.
-3. La vista central muestra un fotograma del inicio de tu corte. Al mover el inicio, se actualiza. Los botones **Reproducir selección** y **Reproducir desde aquí** muestran el video en movimiento dentro de esa misma vista, con sonido cuando exista. Puedes usar **Marcar inicio** y **Marcar final** mientras se reproduce.
-4. Aplica 9 u 11 segundos, cualquier otro preset o una duración personalizada. Los videos sin sonido y los GIF muestran una línea de tiempo sin onda de audio.
-5. Pulsa **Guardar corte WebM…** para exportar la selección. Para convertir toda la animación o película, pulsa **Convertir todo a WebM…**.
-6. Antes de elegir carpeta, selecciona la resolución: original, 2160p, 1440p, 1080p, 720p, 480p o 360p. Es una altura máxima: se conserva la proporción y no se amplía un original más pequeño. Las dimensiones se redondean a números pares para el codificador.
-7. Elige **Más ligero**, **Equilibrado** o **Más calidad**. También puedes limitar la salida a 30 fps y conservar o quitar el sonido. Después pulsa **Elegir carpeta y guardar WebM…**.
+YouTube downloads use the bundled yt-dlp, FFmpeg, and Deno. JavaScript challenge support is enabled through `--remote-components ejs:github`, allowing yt-dlp to obtain its official EJS component when required. Downloads need access to YouTube and, when that component is needed, GitHub.
 
-El valor inicial es 720p máximo, calidad equilibrada, hasta 30 fps y sin audio. La salida usa [VP9](https://www.ffmpeg.org/ffmpeg-codecs.html#libvpx) con calidad constante (CRF 37 / 32 / 26 según el perfil) y, cuando añades o conservas sonido, Opus (64 / 96 / 128 kbit/s). Mayor resolución, movimiento, duración o calidad pueden aumentar el tamaño: no se garantiza un peso fijo ni un mínimo universal. La codificación de clips grandes puede tardar; **Cancelar operación** permite detenerla.
+Private, region-restricted, age-restricted, protected, unavailable, or live videos may not download. The app does not import browser cookies or sign in to a YouTube account. Service changes can require updating yt-dlp. See the [official EJS documentation](https://github.com/yt-dlp/yt-dlp/wiki/EJS).
 
-Los límites de video quedan condicionados por sus fotogramas: un paso de 1 ms permite ajustar el intervalo solicitado, pero no crea un fotograma entre dos existentes. La duración WebM puede variar ligeramente por el tiempo de fotograma y el retardo del audio. Los GIF se convierten por una vuelta de su animación, sin audio. Cuando se detecta transparencia, la exportación intenta conservarla en WebM VP9; su visualización depende del reproductor de destino.
+Audio downloads are stored in `descargas` and video downloads in `videos` inside the app's data folder. Exports are saved wherever you choose.
 
-### Personalizar el aspecto
+Supported source duration is up to four hours. Downloads time out after 15 minutes and request limits of 500 MB for audio or 2 GB for video when the server reports file size. Individual streams may have separate sizes, so these are not guaranteed combined-size limits. Network M3U playlists are not supported.
 
-Pulsa **Temas** en la cabecera. Puedes elegir **Noche**, **OLED**, **Océano**, **Rosa** o **Bosque**, personalizar el color de acento y ajustar el tamaño de la interfaz. Todos son oscuros. Las preferencias se guardan en `apariencia.json` junto al historial y se restauran al abrir el programa.
+Use **Cancel operation** to stop a load, download, or export. Closing during an operation requests cancellation; close again once it finishes.
 
-## Night Studio y marcadores en vivo (versión 0.5)
+## Build from source
 
-La interfaz usa un tema azul noche con tarjetas oscuras y acentos violeta y menta. La biblioteca, los presets y el historial están en el panel lateral derecho. La onda y los ajustes ocupan el centro. La barra inferior permanece visible con reproducción, reloj, marcadores y exportación. Los controles para mover por pasos se encuentran dentro de **Mover por pasos / inicio, final o selección**, en la tarjeta de ajuste fino.
-
-Para seleccionar un fragmento mientras escuchas:
-
-1. Elige el punto desde el que quieres buscar y pulsa **Escuchar desde aquí**. Este modo sigue hasta el final de la pista; **Escuchar selección** reproduce únicamente el intervalo seleccionado al pulsarlo.
-2. Cuando llegue el momento deseado, pulsa **Marcar inicio**. Se coloca el inicio en la posición actual de reproducción y se conserva la duración que tenías, limitada por el final de la pista.
-3. Cuando termine el fragmento que quieres, pulsa **Marcar final**. El final debe quedar después del inicio.
-4. Los dos marcadores mantienen la reproducción en marcha. Pulsa **Detener** y después **Escuchar selección** para revisar el resultado. Puedes afinarlo con el zoom, los campos y los botones de milisegundos.
-
-Los marcadores se habilitan cuando el reproductor entrega una posición válida. El reloj usa las estadísticas de audio de [ffplay](https://www.ffmpeg.org/ffplay.html), con actualización e interpolación de la posición; la latencia del dispositivo y la reacción al pulsar pueden introducir pequeñas diferencias. Para un ajuste de milisegundos, usa los controles de precisión después de marcar.
-
-## Uso
-
-1. Abre `Shiny Twitch Creator Tool Portable 1.1.exe`. Si usas la distribución anterior por carpeta, abre `Shiny Twitch Creator Tool.exe` y conserva su carpeta `tools`.
-2. Pulsa **Abrir audio o M3U** y elige una pista WAV o MP3. También admite FLAC, OGG y M4A. Si abres una lista M3U/M3U8, elige su pista en el desplegable.
-3. También puedes pegar un enlace de YouTube y pulsar **Descargar audio**. La aplicación descarga solo audio y lo carga automáticamente.
-4. Pulsa **Alerta de Twitch · 9 segundos** o **Alerta de Twitch · 11 segundos** para aplicar una duración rápida. Puedes modificar libremente el inicio, el fin y la duración con los campos en segundos (tres decimales). Ya no estás limitado a esos dos tiempos.
-5. Pulsa **Escuchar selección** para probar la alerta o **Escuchar desde aquí** para buscar el momento que quieres. **Detener** para la reproducción.
-6. Elige WAV o MP3 y pulsa **Cortar y guardar…**. Selecciona carpeta y nombre en el diálogo de Windows.
-7. Al terminar, la ruta aparece en el mensaje de estado (pasa el cursor para verla completa) y en el botón **Mostrar último corte**, que abre su carpeta. El historial conserva la pista original, el intervalo, la fecha y el destino entre sesiones.
-
-La selección mantiene la duración elegida al acercarse al final de la pista. Si la pista completa dura menos que 9 u 11 segundos, la aplicación avisa y exporta su duración real, sin rellenar con silencio. El corte se recodifica para permitir inicios precisos; MP3 puede incluir el pequeño retardo propio de ese formato. WAV es la opción para duración exacta por muestras.
-
-## Duraciones rápidas (versión 0.4)
-
-- **Alerta de Twitch:** 9 u 11 segundos.
-- **Ringtone:** 30 segundos.
-- **Notificación:** 1, 1.5, 3, 4 o 5 segundos.
-
-Cada botón aplica su duración al corte actual. Después puedes modificarla con los campos, arrastrando los extremos o con los botones para sumar y quitar milisegundos. Si el fragmento no cabe al final de la pista, se ajusta el inicio para conservar su duración; si la pista completa es más corta, se usa su duración real y aparece un aviso.
-
-## Sumar y quitar tiempo al corte
-
-En **Sumar o quitar tiempo al corte**, pulsa directamente **+1 ms**, **+5 ms**, **+100 ms**, **+500 ms** o **+1 min** para ampliar la duración. Los botones negativos la reducen. Cada clic conserva el inicio del fragmento y mueve únicamente su final, independientemente del objetivo seleccionado en los controles de pasos.
-
-Por ejemplo, un corte de 9 segundos pasa a **9.001 s** con **+1 ms**, a **9.005 s** con **+5 ms**, a **9.100 s** con **+100 ms** o a **9.500 s** con **+500 ms**. También funciona con 11 segundos y con cualquier duración personalizada. Los clics se acumulan. Si se alcanza el final de la pista o la duración mínima, el programa lo indica y aplica solo el ajuste posible.
-
-## Zoom y ajuste preciso
-
-- **Acercar +** y **Alejar -** cambian el zoom de la onda hasta una ventana mínima de 50 ms. **Ver selección** enfoca el corte y **Ver toda la pista** recupera la vista general. La onda contiene picos por milisegundo y muestra una regla con los tiempos de la zona visible.
-- **Explorar pista**, **Vista anterior** y **Vista siguiente** desplazan la vista sin alterar el corte.
-- Arrastra las barras **INICIO** y **FIN** de la onda para acortar o ampliar la selección; arrastra su interior para moverla conservando su duración. Un clic coloca el inicio del corte.
-- Selecciona un paso de **1 ms**, **5 ms**, **100 ms**, **500 ms** o **1 min** (60 segundos). Después elige **Inicio**, **Fin** o **Selección completa** y usa **Retroceder** o **Avanzar**.
-- Ajustar Inicio conserva el fin; ajustar Fin conserva el inicio; mover la selección conserva su duración. Los límites no pueden cruzarse ni salir de la pista. La duración mínima es 1 ms, salvo pistas completas más cortas.
-- Cambiar los extremos o la duración activa la duración personalizada. Los botones de 9 y 11 segundos siguen disponibles para volver a aplicar esos tiempos.
-
-## Datos y límites
-
-- En el ejecutable único, historial y descargas quedan en **Audio Twitch Cut Datos**, junto al exe. En la distribución por carpeta anterior se utiliza `%LOCALAPPDATA%`. Pasa el cursor sobre **Datos y descargas locales** en el panel lateral para ver la ruta exacta.
-- Las descargas de audio de YouTube se conservan en `descargas`; las de video, en `videos`. Los cortes se guardan donde tú elijas.
-- M3U es una lista, no un formato de audio. Se admiten listas UTF-8 con pistas locales y rutas absolutas o relativas a la lista. Las listas con enlaces de red no están admitidas en esta versión.
-- Archivos de hasta cuatro horas. Las descargas tienen un tiempo máximo de 15 minutos y un límite solicitado de 500 MB para audio o 2 GB para video cuando el servidor informa el tamaño. Cada stream descargado puede tener su propio tamaño; el límite no equivale a un límite garantizado del total combinado.
-- YouTube requiere conexión. Videos privados, protegidos, restringidos, transmisiones en directo o cambios del servicio pueden impedir una descarga. No se incluyen cookies ni acceso a cuentas. Actualiza yt-dlp si el servicio cambia.
-- Usa **Cancelar operación** para detener cargas, descargas o exportaciones. Si intentas cerrar mientras hay una operación, se solicita su cancelación; vuelve a cerrar cuando termine.
-
-## Compilar
-
-Requisitos: Windows 10/11 de 64 bits, Rust estable con Cargo y Visual Studio Build Tools con C++ y Windows SDK.
+Requirements: Windows 10/11 x64, stable Rust with Cargo, Visual Studio C++ Build Tools, and the Windows SDK.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/setup-media.ps1
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Check
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Test
+powershell -ExecutionPolicy Bypass -File scripts/build-single.ps1
+```
+
+The single-file portable executable is written to `dist`. Its C runtime is linked statically. For a folder-based build instead, run:
+
+```powershell
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1
 ```
 
-El resultado portable queda en `dist/Shiny Twitch Creator Tool/`. Copia **toda esa carpeta** para usarlo en otro equipo. No necesita Rust instalado para ejecutarse.
+Copy the entire resulting `dist/Shiny Twitch Creator Tool` folder when using that build. During development, media tools are resolved from the embedded bundle, next to the executable, its `tools` folder, `.tools/media`, or PATH. The build scripts also support a local Rust installation under `.tools/cargo` and `.tools/rustup`.
 
-Durante el desarrollo, las herramientas se buscan en `.tools/media`, junto al ejecutable, en `tools` junto al ejecutable o en PATH. El script de compilación también reconoce un Rust local en `.tools/cargo` y `.tools/rustup`.
+Run the optional live download test separately:
 
-## Tecnología
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -YouTubeTest
+```
 
-- Interfaz nativa: [eframe/egui](https://docs.rs/eframe/0.29.1/eframe/).
-- Análisis, onda y exportación: [FFmpeg](https://ffmpeg.org/ffmpeg.html), ffprobe y ffplay.
-- Descarga de audio: [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+A bundled executable can verify its tools and perform a real nine-second WAV export with `--portable-check`.
 
-Consulta `THIRD-PARTY.md` para los componentes de terceros.
+## Project files
+
+- [Release notes](RELEASE_NOTES.md): changes included in the current update.
+- [Validation](VALIDATION.md): checks performed and their limits.
+- [Third-party components](THIRD-PARTY.md): dependencies, upstream sources, and notices.
+
+This repository contains source code and build scripts. Generated executables, downloaded tools, and personal app data are excluded from Git; portable binaries are distributed through Releases. Feature documentation describes the current app without per-feature version headings.

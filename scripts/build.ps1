@@ -1,4 +1,4 @@
-param([switch]$Check, [switch]$Test, [string]$OutputFolder = 'Shiny Twitch Creator Tool')
+param([switch]$Check, [switch]$Test, [switch]$YouTubeTest, [string]$OutputFolder = 'Shiny Twitch Creator Tool')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $projectRoot
@@ -26,11 +26,12 @@ if (Test-Path -LiteralPath $localSdk) {
     $env:LIB = "$(Join-Path $localSdk 'um\x64');$(Join-Path $localSdk 'ucrt\x64');$env:LIB"
 }
 if ($Check) { & $cargoExe check --locked }
+elseif ($YouTubeTest) { & $cargoExe test --locked live_youtube_audio_and_video_download -- --ignored }
 elseif ($Test) { & $cargoExe test --locked }
 else {
     & $cargoExe build --release --locked
-    if ($LASTEXITCODE -ne 0) { throw 'La compilacion fallo.' }
-    if ($OutputFolder -match '[\\/]' -or $OutputFolder -in @('.', '..')) { throw 'OutputFolder debe ser un nombre de carpeta.' }
+    if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
+    if ($OutputFolder -match '[\\/]' -or $OutputFolder -in @('.', '..')) { throw 'OutputFolder must be a folder name.' }
     $dist = Join-Path (Join-Path $projectRoot 'dist') $OutputFolder
     New-Item -ItemType Directory -Force -Path $dist | Out-Null
     Copy-Item -LiteralPath (Join-Path $projectRoot 'target\release\audio-twitch-cut.exe') -Destination (Join-Path $dist 'Shiny Twitch Creator Tool.exe') -Force
@@ -41,7 +42,7 @@ else {
         $toolsDest = Join-Path $dist 'tools'
         New-Item -ItemType Directory -Force -Path $toolsDest | Out-Null
         Get-ChildItem -LiteralPath $media -File | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $toolsDest -Force }
-    } else { Write-Warning 'Faltan las herramientas de audio. Ejecuta scripts/setup-media.ps1 antes de usar el programa.' }
-    Write-Host "Aplicacion portable: $dist"
+    } else { Write-Warning 'Media tools are missing. Run scripts/setup-media.ps1 before using the app.' }
+    Write-Host "Portable app: $dist"
 }
-if ($LASTEXITCODE -ne 0) { throw 'La verificacion fallo.' }
+if ($LASTEXITCODE -ne 0) { throw 'Validation failed.' }
