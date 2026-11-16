@@ -82,9 +82,9 @@ jobs:
         run: |
           if command -v apt-get >/dev/null; then
             apt-get update
-            apt-get install -y --no-install-recommends ca-certificates libgl1 libegl1 libxkbcommon0 libx11-6 dbus
+            apt-get install -y --no-install-recommends ca-certificates libgl1 libegl1 libgl1-mesa-dri libegl-mesa0 libxkbcommon0 libx11-6 dbus
           else
-            pacman -Syu --noconfirm --needed ca-certificates libglvnd libxkbcommon libx11 dbus
+            pacman -Syu --noconfirm --needed ca-certificates libglvnd mesa libxkbcommon libx11 dbus
           fi
       - uses: actions/download-artifact@v8
         with:
