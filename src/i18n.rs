@@ -68,6 +68,10 @@ fn segments(template: &str) -> Vec<&str> {
 // Catalog generated from the existing Spanish interface; English is the key.
 fn spanish(english: &str) -> &str {
     match english {
+        "Video clip duration: {seconds:.3} s" => "Duración del corte de video: {seconds:.3} s",
+        "Choose audio start" => "Elegir inicio del audio",
+        "Match video duration" => "Igualar duración del video",
+        "Move the slider or change Start to choose any part of the audio without changing the clip duration." => "Mueve la barra o cambia Inicio para elegir cualquier parte del audio sin cambiar la duración del fragmento.",
         "Fade in (s):" => "Entrada gradual (s):",
         "Fade out (s):" => "Salida gradual (s):",
         "Reset fades" => "Quitar desvanecimientos",

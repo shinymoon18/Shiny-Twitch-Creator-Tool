@@ -71,6 +71,7 @@ impl App {
     }
     fn video_sound_controls(&mut self, ui: &mut egui::Ui, has_audio: bool) {
         use video::SoundMode;
+        let target_length = if self.show_video_export && self.convert_full { self.audio.as_ref().map_or(self.length, |audio| audio.duration) } else { self.length };
         let previous = self.video_options.mode;
         ui.label(RichText::new(tr!("Which audio would you like to save?")).strong());
         ui.add_enabled_ui(has_audio, |ui| { ui.radio_value(&mut self.video_options.mode, SoundMode::Original, tr!("Keep original audio")); });
@@ -80,13 +81,13 @@ impl App {
         if self.video_options.mode == SoundMode::Replace {
             if ui.button(tr!("Choose audio file…")).clicked() {
                 if let Some(path) = rfd::FileDialog::new().add_filter("Audio", &["wav", "mp3", "flac", "ogg", "m4a", "aac", "opus", "webm"]).pick_file() {
-                    match video::external_audio(path) { Ok(extra) => { self.stop(); self.audio_editor = Some(audio_trim::Editor::new(extra, self.length, ui.ctx())); }, Err(e) => self.message(Err(e)) }
+                    match video::external_audio(path) { Ok(extra) => { self.stop(); self.audio_editor = Some(audio_trim::Editor::new(extra, target_length, ui.ctx())); }, Err(e) => self.message(Err(e)) }
                 }
             }
             if let Some(extra) = &self.video_options.external {
                 ui.label(RichText::new(extra.path.file_name().unwrap_or_default().to_string_lossy()).strong());
                 ui.small(tf!("Audio: {} to {} / {:.3} s", time(extra.start), time(extra.start + extra.length.unwrap_or(extra.duration-extra.start)), extra.length.unwrap_or(extra.duration-extra.start)));
-                if ui.button(tr!("Trim this audio…")).clicked() { let extra=extra.clone(); self.stop(); self.audio_editor=Some(audio_trim::Editor::new(extra,self.length,ui.ctx())); }
+                if ui.button(tr!("Trim this audio…")).clicked() { let extra=extra.clone(); self.stop(); self.audio_editor=Some(audio_trim::Editor::new(extra,target_length,ui.ctx())); }
             } else { ui.colored_label(palette().mint, tr!("Choose an audio file first.")); }
             ui.small(tr!("Completely replaces the original audio. Only the selected audio clip is used."));
         }
@@ -453,7 +454,7 @@ impl eframe::App for App {
                 });
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.button(tr!("Options")).clicked() { self.show_options = true; }
-                    ui.label(RichText::new("STUDIO / 1.2").small().color(palette().accent));
+                    ui.label(RichText::new("STUDIO / 1.2.1").small().color(palette().accent));
                 });
             });
         });

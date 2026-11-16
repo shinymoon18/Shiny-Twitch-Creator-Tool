@@ -1,25 +1,19 @@
-# Shiny Twitch Creator Tool 1.2.0
+# Shiny Twitch Creator Tool 1.2.1
 
-Portable audio, video, and GIF editor for Twitch alerts on Windows 10/11 x64.
+## Fixes and improvements
 
-## Changes
+- Fixed audio selection before replacing a video's sound: the Start field now moves the complete clip instead of being limited by the previous end time.
+- Added a full-track Choose audio start slider and clearer waveform selection handles.
+- Automatically select the current video clip's duration and focus that range when opening or reopening the local-audio editor. Shorter audio uses its actual duration.
+- Added Match video duration to restore the required length after manual changes. Full-file video conversion uses the full output duration when opening the audio editor from its export dialog.
+- Retained English/Spanish options, fades, manual volume adjustment, and the YouTube download correction.
 
-- Added English and Spanish interfaces, automatic selection from the Windows display language, and a saved manual language preference under Options.
-- Fixed a reproduced YouTube HTTP 403 download failure by enabling yt-dlp's official EJS JavaScript component. Audio and video downloads were verified with the reported link.
-- Added fade-in and fade-out controls: drag the green waveform handles or enter durations with millisecond precision.
-- Applied fades consistently to selection preview, exported audio, and loudness measurements, including local audio used to replace a video's sound.
-- Retained complete replacement of original video audio, the independent local-audio trim editor, and the original-audio and silent-export options.
+## Run
 
-## Download and run
+Open `Shiny-Twitch-Creator-Tool-Portable-1.2.1.exe` in a writable folder. The app includes its media tools and extracts them into `Audio Twitch Cut Datos` beside the executable.
 
-Download the portable `.exe` from Assets and open it in a writable folder. Rust, FFmpeg, and yt-dlp do not need to be installed separately.
-
-The first launch extracts its media tools into `Audio Twitch Cut Datos` beside the executable. Copy the executable to move the app; copy that data folder too if you want to retain history and preferences. YouTube features require an internet connection.
-
-A SHA256 file is provided to verify the downloaded executable. The app includes third-party notices; see `THIRD-PARTY.md` in the repository.
+Download the executable and its SHA256 file from the release assets. No separate installation of Rust or the media tools is required.
 
 ## Validation
 
-- 27 local automated tests passed.
-- The separate live-network test downloaded both MP3 audio and video with audio from the reported YouTube link.
-- The final portable executable passed its embedded-tool check and a real nine-second WAV export.
+29 local tests passed, including interaction tests for the trim window, automatic duration selection, selection movement, exports, and audio replacement. The optional network test was not rerun for this editor change; it passed during the preceding download update.

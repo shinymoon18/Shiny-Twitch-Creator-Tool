@@ -4,7 +4,7 @@ Checked on November 15, 2026, on Windows x64.
 
 ## Automated checks
 
-The current suite passed **27 tests**. One additional network-dependent test is excluded from the regular suite and was run successfully on its own.
+The current suite passed **29 tests**. One additional network-dependent test is excluded from the regular suite and was run successfully for the preceding download update.
 
 Coverage includes:
 
@@ -22,6 +22,7 @@ Coverage includes:
 - Waveform interaction: dragging each fade handle changes the appropriate fade without dragging the selection.
 - Language selection for Spanish regional locales with an English fallback, preference serialization, and translated messages preserving paths and numeric precision.
 - Portable tool extraction, cache reuse, rejection of escaping paths, and detection of corrupted compressed payloads.
+- Audio replacement editor: seeking and dragging inside the actual egui trim window, preserving the selected duration, matching the current video length on opening/reopening, jumping beyond the previous end, fitting near the end of the audio, and handling a shorter source. These checks simulate egui input without accessing the desktop.
 
 ## YouTube verification
 

@@ -81,7 +81,9 @@ In **WebM audio**, choose one of these modes:
 - **Export without audio:** create a WebM with no audio track. This is the default.
 - **Replace with local audio:** remove the original audio completely and use a selected section of a local audio file.
 
-When replacing audio, choose a file to open **Trim audio for the video**. Use its waveform, zoom, start/end/duration fields, precision steps, playback markers, and fades to select the desired section. Choose **Use this audio clip in the video** to apply it; **Trim this audio…** reopens the editor.
+When replacing audio, choose a file to open **Trim audio for the video**. The editor automatically selects the current video clip's duration and zooms into that selection. This also applies when reopening the editor after changing the video duration. If the audio is shorter, its full duration is selected.
+
+Use **Choose audio start** or enter a **Start (s)** value to move the entire audio clip anywhere in the MP3 while preserving its duration. Drag inside the waveform selection to move it, or drag its start/end handles to resize it. Zoom, end/duration fields, precision steps, playback markers, and fades remain available. **Match video duration** restores the video's duration after a manual adjustment. Choose **Use this audio clip in the video** to apply it; **Trim this audio…** reopens the editor.
 
 The selected audio starts at the beginning of the video clip. If it is shorter, the remainder is silent; if longer, it is trimmed to the video duration. It is not looped. The video duration and original audio file are preserved. Preview and export use the same source selection.
 
