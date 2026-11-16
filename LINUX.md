@@ -2,7 +2,18 @@
 
 The Linux target is **x86_64 (AMD64)**: the same package supports 64-bit AMD and Intel CPUs. ARM and 32-bit CPUs are not targeted.
 
-The intended portable format is AppImage, built on Debian 12 (glibc 2.36) and tested on Debian and Arch Linux. This is a compatibility target, not a guarantee for every distribution. A working desktop graphics driver is still required.
+The portable format is AppImage, built on Debian 12 with a glibc 2.36 baseline. The package is checked in Debian 12 and Arch Linux containers. The supported targets are Debian 12 or newer and an updated Arch Linux x86_64 installation; this does not guarantee compatibility with every distribution.
+
+## Runtime specifications
+
+- **CPU:** x86_64 / AMD64, for both AMD and Intel processors. No ARM or 32-bit build is provided.
+- **System libraries:** glibc 2.36 or newer and standard C/C++ runtime libraries.
+- **Desktop graphics:** a working X11 or Wayland session and OpenGL/Mesa or vendor graphics drivers. GPU drivers are supplied by the host system.
+- **Sound:** an available audio device and working host audio stack for audible playback.
+- **Desktop integration:** `xdg-desktop-portal` and the backend appropriate to the desktop for file dialogs; `xdg-utils` for opening folders.
+- **AppImage runtime:** FUSE support, or the documented extraction mode as an alternative.
+- **Network:** YouTube access and, when EJS is needed, access to its official GitHub download.
+- **Included tools:** FFmpeg, ffprobe, ffplay, yt-dlp, Deno, and non-system multimedia libraries. Separate Rust or FFmpeg installations are not required for the released AppImage.
 
 ## Application behavior
 

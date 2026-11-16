@@ -1,6 +1,6 @@
 # Shiny Twitch Creator Tool
 
-A portable Windows desktop editor built with Rust for creating Twitch alerts, ringtones, and notifications from audio, video, and animated GIFs.
+A portable desktop editor for Windows and Linux, built with Rust, for creating Twitch alerts, ringtones, and notifications from audio, video, and animated GIFs.
 
 [Download the latest portable app](https://github.com/shinymoon18/Shiny-Twitch-Creator-Tool/releases/latest)
 
@@ -18,9 +18,25 @@ A portable Windows desktop editor built with Rust for creating Twitch alerts, ri
 - Export WAV/MP3 audio and VP9 WebM video with selectable resolution and quality.
 - Keep a history of exported clips and choose where to save each file.
 - Choose English or Spanish, follow the Windows display language, and customize dark themes, accent colors, and interface scale.
-- Run from a single portable executable with the media tools included.
+- Run from a single portable Windows executable or Linux AppImage with the media tools included.
+
+## Supported platforms and requirements
+
+| Platform | Distribution or OS | Package | CPU and runtime requirements |
+| --- | --- | --- | --- |
+| Windows | Windows 10 or Windows 11 | Portable `.exe` | x86_64 / AMD64; 64-bit AMD or Intel processor |
+| Linux | Debian 12 or newer | `.AppImage` | x86_64 / AMD64; glibc 2.36 or newer; standard system C/C++ runtime libraries |
+| Linux | Arch Linux, updated rolling installation | The same `.AppImage` | x86_64 / AMD64; standard system C/C++ runtime libraries |
+
+ARM and 32-bit systems are not supported by these packages. Other Linux distributions may work if they satisfy the same requirements, but are not part of the tested targets.
+
+Both platforms need a working graphics driver and an audio device/driver for audible playback. Linux enables X11 and Wayland backends and requires a working OpenGL/Mesa or vendor graphics stack. File dialogs use `xdg-desktop-portal` with a backend for the desktop, and opening output folders uses `xdg-open` from `xdg-utils`. FUSE support can be replaced by AppImage extraction mode when unavailable. Internet access is needed for YouTube downloads.
+
+FFmpeg, ffprobe, ffplay, yt-dlp, and Deno are included in the downloadable packages. Rust and separate media-tool installations are not needed to use them. See [Linux specifications and build instructions](LINUX.md) for the Linux data layout, desktop requirements, and testing limits.
 
 ## Download and run
+
+### Windows
 
 1. Open [Releases](https://github.com/shinymoon18/Shiny-Twitch-Creator-Tool/releases/latest) and download the portable `.exe` under **Assets**.
 2. Place it in a folder where you have write permission, then run it. Rust and the media tools do not need to be installed separately.
@@ -29,6 +45,14 @@ A portable Windows desktop editor built with Rust for creating Twitch alerts, ri
 To move just the app, copy the executable. To keep your history, preferences, and downloads too, copy **Audio Twitch Cut Datos** as well. Source files and exported clips saved elsewhere must be copied separately; history entries retain their original paths.
 
 The existing data-folder name is retained for compatibility. You do not need to run the app as administrator.
+
+### Linux
+
+Download the `x86_64.AppImage` and its `.sha256` file from [Releases](https://github.com/shinymoon18/Shiny-Twitch-Creator-Tool/releases/latest). Give the AppImage execute permission and open it as your normal user. The same file is intended for Debian 12+ and Arch Linux; AMD and Intel CPUs do not need separate builds.
+
+If FUSE is unavailable, run the AppImage with `APPIMAGE_EXTRACT_AND_RUN=1`. The media tools stay inside the AppImage, while history, language, themes, and downloads use the writable XDG application-data directory, normally `~/.local/share/audiotwitchcut` or `$XDG_DATA_HOME/audiotwitchcut`. Copy that directory separately if you want to move your preferences and history to another Linux machine.
+
+Windows and Linux are distributed as separate native packages. The Windows executable is not required on Linux, and no Wine installation is needed. Automated checks cover native Linux tests, graphical startup under Xvfb, and bundled-tool/export checks in Debian and Arch containers; physical audio devices, interactive portal dialogs, and native Wayland sessions still require testing on actual desktops.
 
 ## Edit audio
 
@@ -121,7 +145,7 @@ Use **Cancel operation** to stop a load, download, or export. Closing during an 
 
 ### Linux
 
-The x86_64 Linux port targets Debian 12 and Arch Linux with an AppImage for AMD and Intel CPUs. Native Linux packaging and distribution checks are documented in [LINUX.md](LINUX.md). X11 and Wayland are enabled, media tools are bundled inside the AppImage, and user data uses a writable XDG directory. Linux build artifacts must pass their native checks before being released; Windows downloads remain separate.
+The x86_64 Linux port supports Debian 12+ and Arch Linux through an AppImage for AMD and Intel CPUs. Native Linux packaging and distribution checks are documented in [LINUX.md](LINUX.md). Build on Debian 12 to retain the glibc 2.36 baseline. X11 and Wayland are enabled, media tools are bundled inside the AppImage, and user data uses a writable XDG directory. Windows downloads remain separate.
 
 ### Windows
 

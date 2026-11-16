@@ -38,7 +38,7 @@ else {
     $dist = Join-Path (Join-Path $projectRoot 'dist') $OutputFolder
     New-Item -ItemType Directory -Force -Path $dist | Out-Null
     Copy-Item -LiteralPath (Join-Path $projectRoot 'target\release\audio-twitch-cut.exe') -Destination (Join-Path $dist 'Shiny Twitch Creator Tool.exe') -Force
-    Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md'), (Join-Path $projectRoot 'THIRD-PARTY.md') -Destination $dist -Force
+    Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md'), (Join-Path $projectRoot 'THIRD-PARTY.md'), (Join-Path $projectRoot 'LINUX.md'), (Join-Path $projectRoot 'RELEASE_NOTES.md') -Destination $dist -Force
     if (Test-Path -LiteralPath (Join-Path $projectRoot 'VALIDATION.md')) { Copy-Item -LiteralPath (Join-Path $projectRoot 'VALIDATION.md') -Destination $dist -Force }
     $media = Join-Path $projectRoot '.tools\media'
     if (Test-Path -LiteralPath $media) {

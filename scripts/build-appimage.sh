@@ -21,7 +21,7 @@ done
 for tool in yt-dlp deno; do
   install -m 755 "$root/.tools/linux-media/$tool" "$appdir/usr/bin/$tool"
 done
-cp README.md THIRD-PARTY.md LINUX.md "$appdir/usr/share/doc/shiny-twitch-creator-tool/"
+cp README.md THIRD-PARTY.md LINUX.md RELEASE_NOTES.md VALIDATION.md "$appdir/usr/share/doc/shiny-twitch-creator-tool/"
 cp -R .tools/linux-media/licenses "$appdir/usr/share/doc/shiny-twitch-creator-tool/"
 cp .tools/linux-media/BUILD-INFO.txt "$appdir/usr/share/doc/shiny-twitch-creator-tool/"
 install -m 755 packaging/linux/AppRun "$appdir/AppRun"

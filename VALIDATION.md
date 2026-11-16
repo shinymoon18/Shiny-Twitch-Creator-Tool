@@ -1,10 +1,12 @@
 # Validation
 
-Checked on November 15, 2026, on Windows x64.
+Checked on November 15, 2026, on Windows x64 and Linux x86_64.
 
 ## Automated checks
 
-The current suite passed **29 tests**. One additional network-dependent test is excluded from the regular suite and was run successfully for the preceding download update.
+The suite passed **29 tests on Windows** and **30 tests on native Linux**. Linux adds a Unix process-group cancellation test. One additional network-dependent test is excluded from the regular suite and was run successfully for the preceding download update.
+
+The Linux AppImage passed its bundled-tool check and real nine-second WAV export in Debian 12 and Arch Linux containers without installing FFmpeg on those test hosts. Graphical startup under Xvfb also passed on the Debian build system. These are automated checks; hardware audio, interactive desktop portals, and native Wayland desktop sessions are not covered by them.
 
 Coverage includes:
 

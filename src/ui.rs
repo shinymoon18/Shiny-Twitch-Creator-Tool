@@ -454,7 +454,7 @@ impl eframe::App for App {
                 });
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.button(tr!("Options")).clicked() { self.show_options = true; }
-                    ui.label(RichText::new("STUDIO / 1.2.1").small().color(palette().accent));
+                    ui.label(RichText::new("STUDIO / 1.3.0").small().color(palette().accent));
                 });
             });
         });
