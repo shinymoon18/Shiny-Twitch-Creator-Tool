@@ -3,6 +3,7 @@ set -euo pipefail
 [[ "$(uname -s)" == Linux && "$(uname -m)" == x86_64 ]] || { echo 'Linux x86_64 is required.' >&2; exit 1; }
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd -- "$root"
+export PATH="$PATH:/usr/sbin:/sbin"
 for tool in curl jq file patchelf desktop-file-validate ldconfig; do
   command -v "$tool" >/dev/null || { echo "Missing build dependency: $tool. See LINUX.md." >&2; exit 1; }
 done
@@ -32,6 +33,15 @@ curl -fsSL --retry 3 https://github.com/linuxdeploy/linuxdeploy/releases/downloa
 chmod 755 "$deploy"
 args=(--appdir "$appdir" --desktop-file "$root/$desktop" --icon-file "$root/packaging/linux/io.github.shinymoon18.ShinyTwitchCreatorTool.svg")
 for tool in audio-twitch-cut ffmpeg ffprobe ffplay deno; do args+=(--executable "$appdir/usr/bin/$tool"); done
+# linuxdeploy's generic desktop exclusions include JACK, ALSA and text/codec
+# libraries which a minimal Debian/Arch installation may not have. Explicit
+# libraries override those exclusions. Keep only the host runtime/driver stack.
+while IFS= read -r library; do
+  case "$(basename -- "$library")" in
+    ld-linux*|libc.so.*|libm.so.*|libpthread.so.*|libdl.so.*|librt.so.*|libresolv.so.*|libutil.so.*|libnss_*|libstdc++.so.*|libgcc_s.so.*|libGL.so.*|libEGL.so.*|libGLX.so.*|libOpenGL.so.*|libGLdispatch.so.*|libdrm*.so.*|libgbm.so.*) continue ;;
+  esac
+  args+=(--library "$library")
+done < <(ldd "$appdir/usr/bin/audio-twitch-cut" "$appdir/usr/bin/ffmpeg" "$appdir/usr/bin/ffprobe" "$appdir/usr/bin/ffplay" "$appdir/usr/bin/deno" | awk '/=> \// {print $3}' | sort -u)
 # These are loaded dynamically by winit rather than appearing in ldd output.
 for name in libX11.so.6 libXcursor.so.1 libXrandr.so.2 libXi.so.6 libxkbcommon.so.0 libxkbcommon-x11.so.0 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1; do
   path="$(ldconfig -p | awk -v name="$name" '$1 == name {found=$NF} END {print found}')"

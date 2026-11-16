@@ -339,7 +339,12 @@ fn time(seconds: f64) -> String {
 fn reveal(path: &std::path::Path) -> media::Result<()> {
     if !path.exists() { return Err(tr!("The file has been moved or deleted.").into()); }
     #[cfg(windows)] { media::command("explorer").arg(format!("/select,{}", path.display())).spawn().map_err(|e| e.to_string())?; }
-    #[cfg(not(windows))] { std::process::Command::new(if cfg!(target_os = "macos") { "open" } else { "xdg-open" }).arg(path.parent().unwrap()).spawn().map_err(|e| e.to_string())?; }
+    #[cfg(not(windows))] {
+        let mut open = std::process::Command::new(if cfg!(target_os = "macos") { "open" } else { "xdg-open" });
+        // Host file managers must use their own libraries, not the AppImage's.
+        if std::env::var_os("APPIMAGE").is_some() { open.env_remove("LD_LIBRARY_PATH"); }
+        open.arg(path.parent().unwrap()).spawn().map_err(|e| e.to_string())?;
+    }
     Ok(())
 }
 fn main() -> eframe::Result {
