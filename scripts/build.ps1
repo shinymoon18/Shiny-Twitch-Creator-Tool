@@ -1,4 +1,4 @@
-param([switch]$Check, [switch]$Test, [switch]$YouTubeTest, [string]$OutputFolder = 'Shiny Twitch Creator Tool')
+param([switch]$Check, [switch]$Test, [switch]$YouTubeTest, [string]$OutputFolder = 'Shiny Twitch Creator Tool', [string]$Target = '')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $projectRoot
@@ -25,7 +25,10 @@ $localSdk = Join-Path $projectRoot '.tools\windows-sdk-x64\c'
 if (Test-Path -LiteralPath $localSdk) {
     $env:LIB = "$(Join-Path $localSdk 'um\x64');$(Join-Path $localSdk 'ucrt\x64');$env:LIB"
 }
-if ($Check) { & $cargoExe check --locked }
+if ($Target -and -not $Check) { throw 'Cross-target support in this Windows script is limited to -Check. Build Linux packages on Linux.' }
+if ($Check) {
+    if ($Target) { & $cargoExe check --locked --target $Target } else { & $cargoExe check --locked }
+}
 elseif ($YouTubeTest) { & $cargoExe test --locked live_youtube_audio_and_video_download -- --ignored }
 elseif ($Test) { & $cargoExe test --locked }
 else {

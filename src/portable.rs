@@ -62,6 +62,15 @@ fn extract(executable: &Path, data: &Path) -> Result<Option<PathBuf>, String> {
 
 pub fn initialize() -> Result<Option<PathBuf>, String> {
     let executable = std::env::current_exe().map_err(|e| e.to_string())?;
+    #[cfg(target_os = "linux")]
+    if let Some(bin) = executable.parent() {
+        // An AppImage mounts its AppDir read-only. Use bundled Linux executables,
+        // but keep settings/history in the normal writable XDG data directory.
+        if ["ffmpeg", "ffprobe", "ffplay", "yt-dlp", "deno"].iter().all(|name| bin.join(name).is_file()) {
+            let _ = TOOLS.set(bin.to_path_buf());
+            return Ok(None);
+        }
+    }
     let data = executable.parent().ok_or(tr!("Could not find the executable's folder."))?.join("Audio Twitch Cut Datos");
     if let Some(cache) = extract(&executable, &data)? {
         let _ = TOOLS.set(cache);
@@ -93,7 +102,8 @@ pub fn verify(data: &Path) -> Result<(), String> {
     crate::media::export_gain(&audio, 0.5, 9.0, &output, -6.0)?;
     let check = crate::media::load(output)?;
     if (check.duration - 9.0).abs() > 0.001 { return Err(tr!("The portable trim check failed.").into()); }
-    let report = serde_json::json!({"single_executable": true, "tools": results, "cut_seconds": check.duration, "data_next_to_exe": true});
+    let beside_exe = std::env::current_exe().ok().is_some_and(|exe| exe.parent() == data.parent());
+    let report = serde_json::json!({"single_executable": cfg!(windows) || std::env::var_os("APPIMAGE").is_some(), "tools": results, "cut_seconds": check.duration, "data_next_to_exe": beside_exe});
     fs::write(data.join("comprobacion-portable.json"), serde_json::to_vec_pretty(&report).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
     Ok(())
 }

@@ -1,0 +1,93 @@
+name: Linux AppImage
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [port/linux-appimage]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: debian:bookworm
+    timeout-minutes: 45
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends build-essential pkg-config curl ca-certificates git jq unzip file patchelf desktop-file-utils ffmpeg libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libssl-dev libdbus-1-dev libgl1-mesa-dri xvfb xauth xdg-utils
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install stable Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -fsS https://sh.rustup.rs -o /tmp/rustup-init.sh
+          sh /tmp/rustup-init.sh -y --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - name: Prepare Linux media tools
+        run: bash scripts/setup-linux-tools.sh
+      - name: Test native Linux code
+        run: |
+          bash scripts/build-linux.sh --check
+          bash scripts/build-linux.sh --test
+      - name: Build AppImage
+        run: bash scripts/build-appimage.sh
+      - name: Verify bundled tools and desktop startup
+        run: |
+          app=$(find "$PWD/dist" -maxdepth 1 -name '*.AppImage' -print -quit)
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          export XDG_DATA_HOME="$PWD/.tools/linux-smoke/data"
+          export XDG_CACHE_HOME="$PWD/.tools/linux-smoke/cache"
+          "$app" --portable-check
+          set +e
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 8s xvfb-run -a "$app" > .tools/linux-startup.log 2>&1
+          code=$?
+          set -e
+          cat .tools/linux-startup.log
+          test "$code" -eq 124
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-x86_64-appimage
+          path: |
+            dist/*.AppImage
+            dist/*.sha256
+          compression-level: 0
+          if-no-files-found: error
+
+  distro-check:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [debian:bookworm, archlinux:base]
+    container: ${{ matrix.image }}
+    steps:
+      - name: Install host desktop libraries
+        shell: sh
+        run: |
+          if command -v apt-get >/dev/null; then
+            apt-get update
+            apt-get install -y --no-install-recommends ca-certificates libgl1 libegl1 libxkbcommon0 libx11-6 dbus
+          else
+            pacman -Syu --noconfirm --needed ca-certificates libglvnd libxkbcommon libx11 dbus
+          fi
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-x86_64-appimage
+          path: artifact
+      - name: Verify the same package on this distribution
+        shell: bash
+        run: |
+          cd artifact
+          sha256sum -c ./*.sha256
+          chmod +x ./*.AppImage
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          export XDG_DATA_HOME="$PWD/test-data"
+          ./*.AppImage --portable-check

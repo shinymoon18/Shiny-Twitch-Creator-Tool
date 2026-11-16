@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Shiny Twitch Creator Tool
+Comment=Create Twitch alerts from audio, video, and GIFs
+Exec=audio-twitch-cut
+Icon=io.github.shinymoon18.ShinyTwitchCreatorTool
+Terminal=false
+Categories=AudioVideo;AudioVideoEditing;
+StartupNotify=true
+StartupWMClass=Shiny Twitch Creator Tool

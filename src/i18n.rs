@@ -7,7 +7,7 @@ static LANGUAGE: AtomicU8 = AtomicU8::new(0);
 pub fn current() -> Language { if LANGUAGE.load(Ordering::Relaxed) == 1 { Language::Spanish } else { Language::English } }
 pub fn set(language: Language) { LANGUAGE.store(if language == Language::Spanish { 1 } else { 0 }, Ordering::Relaxed); }
 pub fn from_locale(locale: &str) -> Language {
-    if locale.split(['-', '_', '.']).next().is_some_and(|s| s.eq_ignore_ascii_case("es")) { Language::Spanish } else { Language::English }
+    if locale.split(['-', '_', '.', ':']).next().is_some_and(|s| s.eq_ignore_ascii_case("es")) { Language::Spanish } else { Language::English }
 }
 pub fn system_language() -> Language {
     #[cfg(windows)] {
@@ -17,7 +17,7 @@ pub fn system_language() -> Language {
         let language = unsafe { GetUserDefaultUILanguage() };
         if language != 0 { return if language & 0x03ff == 0x000a { Language::Spanish } else { Language::English }; }
     }
-    for key in ["LC_ALL", "LC_MESSAGES", "LANG"] {
+    for key in ["LC_ALL", "LANGUAGE", "LC_MESSAGES", "LANG"] {
         if let Ok(locale) = std::env::var(key) { if !locale.is_empty() { return from_locale(&locale); } }
     }
     Language::English
@@ -361,7 +361,7 @@ fn spanish(english: &str) -> &str {
 mod tests {
     use super::*;
     #[test] fn detects_spanish_regional_locales_and_english_fallback() {
-        for locale in ["es-MX", "es-ES", "es_US.UTF-8", "ES"] { assert_eq!(from_locale(locale), Language::Spanish); }
+        for locale in ["es-MX", "es-ES", "es_US.UTF-8", "ES", "es:en"] { assert_eq!(from_locale(locale), Language::Spanish); }
         for locale in ["en-US", "fr-FR", "", "C"] { assert_eq!(from_locale(locale), Language::English); }
     }
     #[test] fn localized_settings_roundtrip_preserves_explicit_choice() {

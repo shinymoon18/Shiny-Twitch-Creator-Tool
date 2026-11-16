@@ -7,6 +7,11 @@ pub fn set_cancellation(flag: Arc<AtomicBool>) { CANCEL.with(|slot| *slot.borrow
 fn cancelled() -> bool { CANCEL.with(|slot| slot.borrow().as_ref().is_some_and(|flag| flag.load(Ordering::Relaxed))) }
 fn terminate(child: &mut Child) {
     #[cfg(windows)] { let _ = command("taskkill").args(["/PID", &child.id().to_string(), "/T", "/F"]).stdout(Stdio::null()).stderr(Stdio::null()).status(); }
+    #[cfg(unix)] {
+        // Every media command gets its own process group. Cancel the downloader's
+        // FFmpeg/Deno children too, without touching the editor's process group.
+        unsafe { libc::kill(-(child.id() as libc::pid_t), libc::SIGKILL); }
+    }
     let _ = child.kill(); let _ = child.wait();
 }
 
@@ -33,6 +38,10 @@ pub fn command(name: &str) -> Command {
     #[cfg(windows)] {
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x08000000);
+    }
+    #[cfg(unix)] {
+        use std::os::unix::process::CommandExt;
+        cmd.process_group(0);
     }
     cmd.stdin(Stdio::null());
     cmd
@@ -173,7 +182,10 @@ impl Playback {
 impl Drop for Playback {
     fn drop(&mut self) {
         self.stopped.store(true, Ordering::Relaxed);
-        for child in [&mut self.child, &mut self.decoder, &mut self.mixer].into_iter().flatten() { let _ = child.kill(); let _ = child.wait(); }
+        for child in [&mut self.child, &mut self.decoder, &mut self.mixer].into_iter().flatten() {
+            #[cfg(unix)] terminate(child);
+            #[cfg(not(unix))] { let _ = child.kill(); let _ = child.wait(); }
+        }
     }
 }
 
@@ -363,6 +375,14 @@ pub fn save_history(path: &Path, entries: &[HistoryEntry]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(unix)]
+    #[test] fn unix_media_command_has_its_own_cancelable_process_group() {
+        let mut child = command("sleep").arg("30").spawn().unwrap();
+        let pid = child.id() as libc::pid_t;
+        assert_eq!(unsafe { libc::getpgid(pid) }, pid);
+        terminate(&mut child);
+        assert!(child.try_wait().unwrap().is_some());
+    }
     #[test]
     #[ignore = "requires YouTube network access; run explicitly"]
     fn live_youtube_audio_and_video_download() {

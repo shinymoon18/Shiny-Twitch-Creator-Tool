@@ -119,6 +119,12 @@ Use **Cancel operation** to stop a load, download, or export. Closing during an 
 
 ## Build from source
 
+### Linux
+
+The x86_64 Linux port targets Debian 12 and Arch Linux with an AppImage for AMD and Intel CPUs. Native Linux packaging and distribution checks are documented in [LINUX.md](LINUX.md). X11 and Wayland are enabled, media tools are bundled inside the AppImage, and user data uses a writable XDG directory. Linux build artifacts must pass their native checks before being released; Windows downloads remain separate.
+
+### Windows
+
 Requirements: Windows 10/11 x64, stable Rust with Cargo, Visual Studio C++ Build Tools, and the Windows SDK.
 
 ```powershell

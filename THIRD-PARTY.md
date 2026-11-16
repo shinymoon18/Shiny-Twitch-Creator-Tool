@@ -23,3 +23,9 @@ The single-file portable executable contains compressed media tools and prepares
 For YouTube JavaScript challenges, yt-dlp may download its official [EJS component](https://github.com/yt-dlp/ejs) using `--remote-components ejs:github`. Consult that project's license and the [EJS documentation](https://github.com/yt-dlp/yt-dlp/wiki/EJS).
 
 When redistributing third-party binaries, review the terms, notices, and corresponding source-delivery requirements that apply to the exact builds being distributed.
+
+## Linux packaging
+
+The Linux AppImage uses the FFmpeg build installed on its build system, rather than the Windows Gyan executables. Its package version is recorded in the bundled `BUILD-INFO.txt`; Debian's FFmpeg copyright notice is copied when available. linuxdeploy collects the media tools' shared-library dependencies from that system. Those libraries retain their respective licenses and corresponding source obligations. The target distribution's package repositories provide package metadata and source information.
+
+[linuxdeploy](https://github.com/linuxdeploy/linuxdeploy) and the AppImage output tools are used during packaging. They do not replace the original components' notices. Linux yt-dlp and Deno executables come from their official release assets, with release-provided SHA256 verification.

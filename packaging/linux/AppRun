@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+appdir="$(cd -- "$(dirname -- "$(readlink -f -- "$0")")" && pwd)"
+export PATH="$appdir/usr/bin:$PATH"
+export LD_LIBRARY_PATH="$appdir/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+exec "$appdir/usr/bin/audio-twitch-cut" "$@"
