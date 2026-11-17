@@ -1,4 +1,4 @@
-param([switch]$Check, [switch]$Test, [switch]$YouTubeTest, [string]$OutputFolder = 'Shiny Twitch Creator Tool', [string]$Target = '')
+param([switch]$Check, [switch]$Test, [switch]$YouTubeTest, [switch]$UpdateTest, [string]$OutputFolder = 'Shiny Twitch Creator Tool', [string]$Target = '')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $projectRoot
@@ -25,10 +25,16 @@ $localSdk = Join-Path $projectRoot '.tools\windows-sdk-x64\c'
 if (Test-Path -LiteralPath $localSdk) {
     $env:LIB = "$(Join-Path $localSdk 'um\x64');$(Join-Path $localSdk 'ucrt\x64');$env:LIB"
 }
+$localHeaders = Join-Path $projectRoot '.tools\windows-sdk-headers\c\Include'
+if (Test-Path -LiteralPath $localHeaders) {
+    $headerVersion = Get-ChildItem -LiteralPath $localHeaders -Directory | Sort-Object Name -Descending | Select-Object -First 1
+    if ($headerVersion) { $env:INCLUDE = "$(Join-Path $headerVersion.FullName 'ucrt');$(Join-Path $headerVersion.FullName 'shared');$(Join-Path $headerVersion.FullName 'um');$env:INCLUDE" }
+}
 if ($Target -and -not $Check) { throw 'Cross-target support in this Windows script is limited to -Check. Build Linux packages on Linux.' }
 if ($Check) {
     if ($Target) { & $cargoExe check --locked --target $Target } else { & $cargoExe check --locked }
 }
+elseif ($UpdateTest) { & $cargoExe test --locked live_github_release_and_package_verification -- --ignored }
 elseif ($YouTubeTest) { & $cargoExe test --locked live_youtube_audio_and_video_download -- --ignored }
 elseif ($Test) { & $cargoExe test --locked }
 else {

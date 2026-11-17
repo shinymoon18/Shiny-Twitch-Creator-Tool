@@ -24,6 +24,7 @@ The portable format is AppImage, built on Debian 12 with a glibc 2.36 baseline. 
 - File dialogs use the desktop portal through rfd. A working `xdg-desktop-portal` service and a backend appropriate for the desktop are required; minimal window-manager installations may need to install them.
 - System language follows Linux locale variables, with English/Spanish overrides retained in Options.
 - Cancellation terminates the Unix process group so FFmpeg/Deno children are stopped with a canceled download.
+- The built-in updater checks stable GitHub Releases and selects the Linux x86_64 asset. Installation requires a writable AppImage location; it replaces the AppImage, keeps a backup, and leaves XDG user data intact. Plain native builds and system-managed installations must be updated separately.
 
 ## Install build dependencies
 

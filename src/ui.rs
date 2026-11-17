@@ -50,7 +50,7 @@ impl App {
     fn options_ui(&mut self, ctx: &egui::Context) {
         if !self.show_options { return; }
         let mut open = true;
-        let previous = self.settings.language;
+        let previous = (self.settings.language, self.settings.automatic_updates);
         egui::Window::new(tr!("Options")).id(egui::Id::new("options-window")).open(&mut open).resizable(false).default_width(390.0).show(ctx, |ui| {
             ui.heading("Language / Idioma");
             ui.radio_value(&mut self.settings.language, None, tr!("System default"));
@@ -59,12 +59,19 @@ impl App {
             ui.small(tr!("Language changes apply immediately and are saved for next time."));
             ui.separator();
             if ui.button(tr!("Customize appearance…")).clicked() { self.show_themes = true; }
+            ui.separator();
+            ui.heading(tr!("Updates"));
+            ui.label(tf!("Installed version: {version}", version = env!("CARGO_PKG_VERSION")));
+            ui.checkbox(&mut self.settings.automatic_updates, tr!("Check for updates automatically"));
+            if ui.button(tr!("Check for updates…")).clicked() { self.updates.show = true; self.updates.check(ctx); }
         });
         self.show_options = open;
-        if previous != self.settings.language {
-            self.settings.apply();
-            self.error = false;
-            self.status = tr!("Open a track or paste a YouTube link to get started.").into();
+        if previous != (self.settings.language, self.settings.automatic_updates) {
+            if previous.0 != self.settings.language {
+                self.settings.apply();
+                self.error = false;
+                self.status = tr!("Open a track or paste a YouTube link to get started.").into();
+            }
             let result = serde_json::to_vec_pretty(&self.settings).map_err(|e| e.to_string()).and_then(|bytes| std::fs::write(self.data.join("settings.json"), bytes).map_err(|e| e.to_string()));
             if let Err(e) = result { self.message(Err(tf!("Could not save options: {e}"))); }
         }
@@ -430,14 +437,17 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+        self.updates.poll(self.settings.automatic_updates, ctx);
+        if self.updates.restart { self.stop(); ctx.send_viewport_cmd(egui::ViewportCommand::Close); return; }
         self.poll();
         self.poll_frame(ctx);
-        if ctx.input(|i| i.viewport().close_requested()) && self.receiver.is_some() {
+        if ctx.input(|i| i.viewport().close_requested()) && (self.receiver.is_some() || self.updates.installing()) {
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose); self.cancel.store(true, Ordering::Relaxed);
             self.status = tr!("Canceling the operation. You can close the app when it finishes…").into();
+            if self.updates.downloading() { self.updates.cancel(); }
         }
         if self.receiver.is_some() || self.player.is_some() || self.frame_receiver.is_some() { ctx.request_repaint_after(Duration::from_millis(30)); }
-        let busy = self.receiver.is_some() || self.audio_editor.is_some();
+        let busy = self.receiver.is_some() || self.audio_editor.is_some() || self.updates.installing();
         egui::TopBottomPanel::top("brand").frame(egui::Frame::none().fill(palette().bg).inner_margin(egui::Margin::symmetric(22.0, 15.0))).show(ctx, |ui| {
             ui.horizontal(|ui| {
                 let (logo, _) = ui.allocate_exact_size(Vec2::splat(42.0), egui::Sense::hover());
@@ -454,7 +464,7 @@ impl eframe::App for App {
                 });
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.button(tr!("Options")).clicked() { self.show_options = true; }
-                    ui.label(RichText::new("STUDIO / 1.3.0").small().color(palette().accent));
+                ui.label(RichText::new(format!("STUDIO / {}", env!("CARGO_PKG_VERSION"))).small().color(palette().accent));
                 });
             });
         });
@@ -498,5 +508,6 @@ impl eframe::App for App {
         self.video_export_ui(ctx);
         self.sound_window_ui(ctx);
         self.external_editor_ui(ctx);
+        self.updates_ui(ctx);
     }
 }

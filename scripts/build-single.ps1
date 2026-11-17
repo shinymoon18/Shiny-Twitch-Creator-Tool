@@ -6,7 +6,7 @@ Set-Location -LiteralPath $projectRoot
 $previousFlags = $env:RUSTFLAGS
 try {
     $env:RUSTFLAGS = "$previousFlags -C target-feature=+crt-static".Trim()
-    & (Join-Path $PSScriptRoot 'build.ps1') -OutputFolder 'Shiny Twitch Creator Tool 1.3.0'
+    & (Join-Path $PSScriptRoot 'build.ps1') -OutputFolder 'Shiny Twitch Creator Tool 1.4.0'
 } finally { $env:RUSTFLAGS = $previousFlags }
 
 $partsDir = Join-Path $projectRoot '.tools\portable-parts'
@@ -46,7 +46,7 @@ try {
 $hash = (Get-FileHash -LiteralPath $payloadPath -Algorithm SHA256).Hash
 $hashBytes = New-Object byte[] 32
 for ($index = 0; $index -lt 32; $index++) { $hashBytes[$index] = [Convert]::ToByte($hash.Substring($index * 2, 2), 16) }
-$destination = Join-Path $projectRoot 'dist\Shiny-Twitch-Creator-Tool-Portable-1.3.0.exe'
+$destination = Join-Path $projectRoot 'dist\Shiny-Twitch-Creator-Tool-Portable-1.4.0.exe'
 Copy-Item -LiteralPath (Join-Path $projectRoot 'target\release\audio-twitch-cut.exe') -Destination $destination -Force
 $exe = [System.IO.File]::Open($destination, [System.IO.FileMode]::Append, [System.IO.FileAccess]::Write)
 try {

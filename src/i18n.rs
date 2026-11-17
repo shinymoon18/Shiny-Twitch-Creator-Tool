@@ -22,9 +22,10 @@ pub fn system_language() -> Language {
     }
     Language::English
 }
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(default)]
-pub struct Settings { pub language: Option<Language> }
+pub struct Settings { pub language: Option<Language>, pub automatic_updates: bool }
+impl Default for Settings { fn default() -> Self { Self { language: None, automatic_updates: true } } }
 impl Settings { pub fn apply(&self) { set(self.language.unwrap_or_else(system_language)); } }
 
 pub fn text(english: &'static str) -> &'static str {
@@ -68,6 +69,44 @@ fn segments(template: &str) -> Vec<&str> {
 // Catalog generated from the existing Spanish interface; English is the key.
 fn spanish(english: &str) -> &str {
     match english {
+        "The update worker stopped unexpectedly." => "El proceso de actualización se detuvo inesperadamente.",
+        "Updates" => "Actualizaciones",
+        "Installed version: {version}" => "Versión instalada: {version}",
+        "Available version: {version}" => "Versión disponible: {version}",
+        "Check for updates automatically" => "Buscar actualizaciones automáticamente",
+        "Check for updates…" => "Buscar actualizaciones…",
+        "Software updates" => "Actualizaciones del programa",
+        "Updates are provided through GitHub Releases." => "Las actualizaciones se obtienen de GitHub Releases.",
+        "Checking GitHub Releases…" => "Buscando actualizaciones en GitHub Releases…",
+        "No newer stable release is available." => "No hay una versión estable más reciente disponible.",
+        "A new version is available." => "Hay una nueva versión disponible.",
+        "Downloaded {done:.1} / {total:.1} MB" => "Descargado: {done:.1} / {total:.1} MB",
+        "Cancel update download" => "Cancelar descarga de actualización",
+        "The download passed SHA256 verification and is ready to install." => "La descarga pasó la verificación SHA256 y está lista para instalarse.",
+        "Preparing installation and restart…" => "Preparando la instalación y el reinicio…",
+        "The update could not be completed." => "No se pudo completar la actualización.",
+        "Release notes" => "Cambios de esta versión",
+        "Download update" => "Descargar actualización",
+        "The app will close and restart. Your history and preferences will be kept. Unsaved selections are not restored." => "El programa se cerrará y reiniciará. Se conservarán el historial y las preferencias. Las selecciones sin guardar no se recuperan.",
+        "Install and restart" => "Instalar y reiniciar",
+        "Finish the current operation and close editing/export dialogs before installing." => "Termina la operación actual y cierra los diálogos de edición o exportación antes de instalar.",
+        "Check again" => "Buscar de nuevo",
+        "Only stable releases from the official repository are used. The previous executable is kept as a backup." => "Solo se utilizan versiones estables del repositorio oficial. Se conserva el ejecutable anterior como respaldo.",
+        "The release does not provide a SHA256 digest." => "La versión no proporciona un resumen SHA256.",
+        "The release SHA256 digest is invalid." => "El resumen SHA256 de la versión no es válido.",
+        "Unexpected release address." => "La dirección de la versión no es la esperada.",
+        "This release has no compatible package for your system." => "Esta versión no incluye un paquete compatible con tu sistema.",
+        "The release package is invalid." => "El paquete de la versión no es válido.",
+        "The release response is too large." => "La respuesta de la versión es demasiado grande.",
+        "Automatic installation on Linux requires the AppImage package." => "La instalación automática en Linux requiere el paquete AppImage.",
+        "Update canceled." => "Actualización cancelada.",
+        "The downloaded package has an unexpected size." => "El paquete descargado no tiene el tamaño esperado.",
+        "Update verification failed. The existing program was not changed." => "Falló la verificación de la actualización. No se modificó el programa existente.",
+        "The application folder is unavailable." => "La carpeta del programa no está disponible.",
+        "The application folder must be writable to install an update." => "La carpeta del programa debe permitir escritura para instalar una actualización.",
+        "The staged update is invalid. The existing program was not changed." => "La actualización preparada no es válida. No se modificó el programa existente.",
+        "The update backup already exists." => "El archivo de respaldo de la actualización ya existe.",
+        "The previous program was restored." => "Se restauró el programa anterior.",
         "Video clip duration: {seconds:.3} s" => "Duración del corte de video: {seconds:.3} s",
         "Choose audio start" => "Elegir inicio del audio",
         "Match video duration" => "Igualar duración del video",
@@ -365,10 +404,12 @@ mod tests {
         for locale in ["en-US", "fr-FR", "", "C"] { assert_eq!(from_locale(locale), Language::English); }
     }
     #[test] fn localized_settings_roundtrip_preserves_explicit_choice() {
-        let settings = Settings { language: Some(Language::English) };
+        let settings = Settings { language: Some(Language::English), ..Default::default() };
         let decoded: Settings = serde_json::from_str(&serde_json::to_string(&settings).unwrap()).unwrap();
         assert_eq!(decoded.language, Some(Language::English));
         assert_eq!(serde_json::from_str::<Settings>("{}").unwrap().language, None);
+        assert!(serde_json::from_str::<Settings>(r#"{"language":"Spanish"}"#).unwrap().automatic_updates);
+        assert!(!serde_json::from_str::<Settings>(r#"{"automatic_updates":false}"#).unwrap().automatic_updates);
     }
     #[test] fn format_segments_keep_paths_and_numeric_precision() {
         assert_eq!(segments("Audio: {} to {} / {:.3} s"), vec!["Audio: ", " to ", " / ", " s"]);

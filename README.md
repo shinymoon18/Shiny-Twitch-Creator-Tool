@@ -19,6 +19,7 @@ A portable desktop editor for Windows and Linux, built with Rust, for creating T
 - Keep a history of exported clips and choose where to save each file.
 - Choose English or Spanish, follow the Windows display language, and customize dark themes, accent colors, and interface scale.
 - Run from a single portable Windows executable or Linux AppImage with the media tools included.
+- Check GitHub Releases automatically and download, verify, and install stable updates from inside the app.
 
 ## Supported platforms and requirements
 
@@ -128,6 +129,18 @@ The initial -18 LUFS target is an editable personal reference, not a Twitch requ
 Open **Options → Language / Idioma** and choose **System default**, **English**, or **Español**. On first launch, Spanish Windows display languages select Spanish; other display languages use English. A manual choice is saved for future launches.
 
 Inside Options, **Customize appearance…** offers Night, OLED, Ocean, Rose, and Forest themes, a custom accent color, and interface scale. All themes are dark.
+
+## Built-in updates
+
+In **Options → Updates**, automatic checks are enabled by default. The app checks the official public GitHub repository at startup and every six hours while it remains open. **Check for updates…** runs a manual check, and the automatic-check preference is saved. No GitHub login is required.
+
+When a newer stable release is available, the app selects the Windows executable or Linux x86_64 AppImage automatically. Choose **Download update**, then **Install and restart** after the download passes SHA256 verification. Installation waits until active operations and editing/export dialogs are finished. The app keeps history and preferences, but unsaved editing selections are not restored after restarting.
+
+Only packages from this repository's GitHub Releases are accepted. HTTPS is required, and the package size and SHA256 digest supplied by GitHub are verified before replacement. Drafts, prereleases, equal versions, and older versions are skipped. A compatible package and a valid digest must be present; otherwise installation is refused.
+
+The app keeps the previous executable as a sibling `.previous-*` backup and restores it if replacement or relaunch fails. The application folder must be writable. On Linux, automatic installation is available for the AppImage package; system-managed or plain native builds must be updated separately. AppImage user data stays in its XDG directory. The executable's existing filename is retained after an in-app update.
+
+Existing installations without the updater need one manual upgrade to a version that includes it. After that, future published stable Releases can be installed through this interface. No background service is installed, and the app does not check while closed.
 
 ## YouTube downloads and limitations
 

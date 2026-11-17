@@ -11,6 +11,8 @@ mod theme;
 mod sound;
 mod portable;
 mod audio_trim;
+mod updates;
+mod update_ui;
 use editor::{Target, View};
 use eframe::egui::{self, Color32, RichText, Stroke, Vec2};
 use media::{Audio, HistoryEntry};
@@ -42,6 +44,7 @@ struct App {
     audio_editor: Option<audio_trim::Editor>,
     settings: i18n::Settings, show_options: bool,
     audio_fades: fades::Fades,
+    updates: updates::Manager,
 }
 
 impl App {
@@ -59,6 +62,7 @@ impl App {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => (Vec::new(), tr!("Open a track or paste a YouTube link to get started.").into(), false),
             Err(e) => (Vec::new(), tf!("Could not open the history: {e}"), true),
         };
+        let updates = updates::Manager::new(&data);
         Self { audio: None, start: 0.0, length: 9.0, preset: Some(9.0), url: String::new(), tracks: vec![], track_index: 0,
             view: View::full(1.0), step: 0.001, target: Target::Selection, drag: None,
             receiver: None, status, error, history, data, player: None, playhead: 0.0, format_mp3: false,
@@ -66,7 +70,7 @@ impl App {
             video_mode: false, other: Workspace::default(), appearance, show_themes: false,
             video_options: video::Options::default(), show_video_export: false, convert_full: false,
             frame_receiver: None, frame_texture: None, frame_at: None, frame_error: String::new(),
-            show_sound: false, audio_gain_db: 0.0, target_lufs: -18.0, level_report: None, audio_editor: None, settings, show_options: false, audio_fades: fades::Fades::default() }
+            show_sound: false, audio_gain_db: 0.0, target_lufs: -18.0, level_report: None, audio_editor: None, settings, show_options: false, audio_fades: fades::Fades::default(), updates }
     }
     fn message(&mut self, result: media::Result<()>) {
         if let Err(e) = result { self.status = e; self.error = true; }
@@ -348,6 +352,14 @@ fn reveal(path: &std::path::Path) -> media::Result<()> {
     Ok(())
 }
 fn main() -> eframe::Result {
+    if let Some(code) = updates::helper_mode() { std::process::exit(code); }
+    if std::env::args().any(|arg| arg == "--update-check") {
+        match updates::check() {
+            Ok(update) => println!("{}", serde_json::json!({"current": env!("CARGO_PKG_VERSION"), "available": update.as_ref().map(|u| &u.version), "repository": updates::REPOSITORY})),
+            Err(error) => { eprintln!("{error}"); std::process::exit(1); }
+        }
+        return Ok(());
+    }
     i18n::set(i18n::system_language());
     let portable_data = match portable::initialize() {
         Ok(data) => data,

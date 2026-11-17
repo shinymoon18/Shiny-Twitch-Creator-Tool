@@ -11,6 +11,10 @@ The single-file portable executable contains compressed media tools and prepares
 - [tempfile](https://github.com/Stebalien/tempfile): MIT or Apache-2.0.
 - [chrono](https://github.com/chronotope/chrono): MIT or Apache-2.0.
 - [flate2](https://github.com/rust-lang/flate2-rs): MIT or Apache-2.0; used to decompress the portable bundle.
+- [ureq](https://github.com/algesten/ureq): MIT or Apache-2.0; HTTPS update requests using rustls and its cryptographic dependencies, recorded in Cargo.lock.
+- [sha2](https://github.com/RustCrypto/hashes): MIT or Apache-2.0; SHA256 package verification.
+- [semver](https://github.com/dtolnay/semver): MIT or Apache-2.0; stable version comparison.
+- [url](https://github.com/servo/rust-url): MIT or Apache-2.0; update URL validation.
 
 ## Media tools
 

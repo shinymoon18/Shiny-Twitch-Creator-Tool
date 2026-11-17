@@ -43,7 +43,11 @@ jobs:
           bash scripts/build-linux.sh --check
           bash scripts/build-linux.sh --test
       - name: Build AppImage
-        run: bash scripts/build-appimage.sh
+        # Exercise the actual Linux package downloader before packaging the app.
+        # No downloaded update is installed by this test.
+        run: |
+          bash scripts/build-linux.sh --update-test
+          bash scripts/build-appimage.sh
       - name: Verify bundled tools and desktop startup
         run: |
           app=$(find "$PWD/dist" -maxdepth 1 -name '*.AppImage' -print -quit)
@@ -51,6 +55,7 @@ jobs:
           export XDG_DATA_HOME="$PWD/.tools/linux-smoke/data"
           export XDG_CACHE_HOME="$PWD/.tools/linux-smoke/cache"
           "$app" --portable-check
+          SHINY_TEST_APPIMAGE="$app" cargo test --locked linux_appimage_installer_probe -- --ignored
           set +e
           LIBGL_ALWAYS_SOFTWARE=1 timeout 8s xvfb-run -a "$app" > .tools/linux-startup.log 2>&1
           code=$?

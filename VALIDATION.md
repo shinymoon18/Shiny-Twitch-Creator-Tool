@@ -1,10 +1,19 @@
 # Validation
 
-Checked on November 15, 2026, on Windows x64 and Linux x86_64.
+Latest local updater checks: November 16, 2026. The published Windows/Linux platform baseline was checked on November 15, 2026.
+
+## Local updater checks
+
+- 35 Windows tests passed, including platform/version selection, digest requirements, URL restrictions, download size/hash checks, cancellation, backup preservation, recovery after a real invalid-executable launch failure, and waiting for the previous Windows process to exit.
+- The updated source passed `cargo check` for Linux x86_64 using a cross compiler for its TLS dependency. This is a compilation check, not a native Linux updater-installation test.
+- A separate optional GitHub download test exercises the actual HTTPS client, redirects, complete package download, and SHA256 verification without installing the downloaded program. Run it with `powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -UpdateTest`.
+- The optional GitHub test passed against the actual latest published package, including its complete download and digest verification.
+- The real Windows installer helper passed an isolated integration check: it waited for a previous fixture process to exit, replaced the fixture executable, preserved the original backup, and restarted the replacement in CLI-only update-check mode. No graphical window or existing user application was touched.
+- No desktop access is used for the local updater checks. Before publishing an AppImage, the Linux release workflow also requires native tests, a real package-download verification, and an isolated AppImage installation/restart probe. The probe verifies replacement, preservation of the previous file and an already-open handle, and the restarted program's reported version without opening its interface.
 
 ## Automated checks
 
-The suite passed **29 tests on Windows** and **30 tests on native Linux**. Linux adds a Unix process-group cancellation test. One additional network-dependent test is excluded from the regular suite and was run successfully for the preceding download update.
+The published platform baseline passed **29 tests on Windows** and **30 tests on native Linux**. Linux adds a Unix process-group cancellation test. The optional YouTube test is excluded from the regular suite and passed for the preceding download update.
 
 The Linux AppImage passed its bundled-tool check and real nine-second WAV export in Debian 12 and Arch Linux containers without installing FFmpeg on those test hosts. Graphical startup under Xvfb also passed on the Debian build system. These are automated checks; hardware audio, interactive desktop portals, and native Wayland desktop sessions are not covered by them.
 

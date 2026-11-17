@@ -14,6 +14,7 @@ case "${1:---build}" in
     export PATH="$root/.tools/linux-media:$PATH"
     cargo test --locked live_youtube_audio_and_video_download -- --ignored
     ;;
+  --update-test) cargo test --locked live_github_release_and_package_verification -- --ignored ;;
   --build) cargo build --release --locked ;;
-  *) echo 'Usage: bash scripts/build-linux.sh [--build|--check|--test|--youtube-test]' >&2; exit 2 ;;
+  *) echo 'Usage: bash scripts/build-linux.sh [--build|--check|--test|--youtube-test|--update-test]' >&2; exit 2 ;;
 esac
